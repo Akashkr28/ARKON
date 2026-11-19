@@ -30,6 +30,7 @@ function ViewerClock() {
 
 export default function Scene() {
   const modelId = useViewerStore((s) => s.modelId);
+  const modelLoadCount = useViewerStore((s) => s.modelLoadCount);
   const hologram = useViewerStore((s) => s.materialMode === 'hologram');
   const model = MODELS.find((m) => m.id === modelId);
 
@@ -50,7 +51,7 @@ export default function Scene() {
 
       <ViewerClock />
       {/* TODO(depth): Depth Anything occlusion — render a depth mask here so hands can pass in front of the model. */}
-      <ModelErrorBoundary key={modelId}>
+      <ModelErrorBoundary key={`${modelId}:${modelLoadCount}`}>
         <ModelViewer url={model.url} />
       </ModelErrorBoundary>
       <HandRings />

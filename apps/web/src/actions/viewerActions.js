@@ -140,6 +140,9 @@ export function loadModel(modelId) {
   set({
     ...NO_SELECTION,
     modelId,
+    // Bumped on every load so the scene remounts even when the id is unchanged
+    // (retry after an error, reload after a re-upload).
+    modelLoadCount: get().modelLoadCount + 1,
     modelStatus: 'loading',
     modelError: null,
     parts: {},

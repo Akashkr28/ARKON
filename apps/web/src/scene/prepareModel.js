@@ -3,8 +3,17 @@ import { VIEW } from '../config';
 
 const FALLBACK_DIRECTION = new Vector3(0, 1, 0);
 
+// GLTFLoader rewrites names ("Base plate" → "Base_plate", duplicates get "_1") but
+// keeps the original in userData.name. A multi-material part is a group of meshes,
+// so fall back to the parent's name.
 function partName(mesh, index) {
-  return mesh.name || mesh.parent?.name || `Part ${index + 1}`;
+  return (
+    mesh.userData.name ||
+    mesh.parent?.userData.name ||
+    mesh.name ||
+    mesh.parent?.name ||
+    `Part ${index + 1}`
+  );
 }
 
 // For one mesh, work out how far (in its parent's local space) it should move

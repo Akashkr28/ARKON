@@ -1,9 +1,11 @@
 import { config } from './config.js';
 import { createPool } from './db/pool.js';
 import { createApp } from './app.js';
+import { createConverterClient } from './converterClient.js';
 
 const pool = createPool(config.databaseUrl);
-const app = createApp({ db: pool });
+const converter = createConverterClient(config.converterUrl);
+const app = createApp({ db: pool, converter });
 
 // Loopback only: the web dev server proxies /api here, nothing else should reach it.
 const server = app.listen(config.port, '127.0.0.1', () => {

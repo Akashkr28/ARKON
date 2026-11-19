@@ -7,18 +7,23 @@ Phase 1 of a larger project (backend + STEP conversion, AI assistant, multi-user
 
 ## Setup
 
-Requires Node 22.9+, PostgreSQL, and a webcam.
+Requires Node 22.9+, PostgreSQL, [uv](https://docs.astral.sh/uv/) (Python), and a webcam.
 
 ```bash
 npm install
+npm run setup:converter                  # Python venv with OpenCASCADE (OCP) + FastAPI
 createdb holocad && createdb holocad_test
 cp apps/api/.env.example apps/api/.env   # then put your Postgres user/password in it
 npm run db:migrate
-npm run dev                              # web on :5173, API on :3001
+npm run dev                              # web :5173, API :3001, converter :8001
 ```
 
-The repo is an npm workspace: `apps/web` (the viewer), `apps/api` (Express + Postgres).
-`npm test` runs the API tests; database tests are skipped unless `DATABASE_URL_TEST` is set.
+The repo is an npm workspace: `apps/web` (the viewer), `apps/api` (Express + Postgres), plus
+`services/converter` (Python, STEP → GLB with OpenCASCADE). `npm test` runs the API and
+converter tests; database tests are skipped unless `DATABASE_URL_TEST` is set.
+
+A sample STEP assembly lives in `services/converter/samples/mini-gearbox.step`; regenerate it
+with `cd services/converter && uv run python -m holocad_converter.sample samples/mini-gearbox.step`.
 
 Open http://localhost:5173 in Chrome or Edge and allow camera access. The camera only works on
 `localhost` or over `https://`. The first load downloads the hand-tracking model (~8 MB) from

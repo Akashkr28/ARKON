@@ -10,6 +10,7 @@ export const initialTransform = () => ({
 // Read-only from components. All writes go through actions/viewerActions.js.
 export const useViewerStore = create(() => ({
   modelId: MODELS[0].id,
+  modelLoadCount: 0,
   modelStatus: 'loading', // 'loading' | 'ready' | 'error'
   modelError: null,
   modelVisible: true,
