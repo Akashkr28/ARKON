@@ -7,12 +7,18 @@ Phase 1 of a larger project (backend + STEP conversion, AI assistant, multi-user
 
 ## Setup
 
-Requires Node 18+ and a webcam.
+Requires Node 22.9+, PostgreSQL, and a webcam.
 
 ```bash
 npm install
-npm run dev
+createdb holocad && createdb holocad_test
+cp apps/api/.env.example apps/api/.env   # then put your Postgres user/password in it
+npm run db:migrate
+npm run dev                              # web on :5173, API on :3001
 ```
+
+The repo is an npm workspace: `apps/web` (the viewer), `apps/api` (Express + Postgres).
+`npm test` runs the API tests; database tests are skipped unless `DATABASE_URL_TEST` is set.
 
 Open http://localhost:5173 in Chrome or Edge and allow camera access. The camera only works on
 `localhost` or over `https://`. The first load downloads the hand-tracking model (~8 MB) from
