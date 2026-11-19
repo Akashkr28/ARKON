@@ -9,6 +9,24 @@ export class ConverterError extends Error {
   }
 }
 
+// The converter speaks snake_case (Python); the rest of the API uses camelCase.
+function normalizeResult(body) {
+  return {
+    glbBytes: body.glb_bytes,
+    partCount: body.part_count,
+    triangleCount: body.triangle_count,
+    bounds: body.bounds ?? null,
+    seconds: body.seconds ?? null,
+    parts: (body.parts ?? []).map((part) => ({
+      index: part.index,
+      name: part.name,
+      parentName: part.parent_name ?? null,
+      triangleCount: part.triangle_count,
+      color: part.color ?? null,
+    })),
+  };
+}
+
 export function createConverterClient(baseUrl) {
   async function health() {
     try {
@@ -35,7 +53,7 @@ export function createConverterClient(baseUrl) {
     }
 
     const body = await res.json().catch(() => ({}));
-    if (res.ok) return body;
+    if (res.ok) return normalizeResult(body);
     // 422 = the converter understood the request but the file itself is the problem.
     const detail = typeof body.detail === 'string' ? body.detail : `HTTP ${res.status}`;
     throw new ConverterError(detail, { status: res.status, userFacing: res.status === 422 });

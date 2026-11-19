@@ -7,7 +7,16 @@ let server;
 let baseUrl;
 const responses = {
   '/health': [200, { status: 'ok' }],
-  'good.step': [200, { part_count: 7, triangle_count: 1188 }],
+  'good.step': [
+    200,
+    {
+      glb_bytes: 4500,
+      part_count: 1,
+      triangle_count: 12,
+      bounds: { min: [0, 0, 0], max: [1, 1, 1], units: 'm' },
+      parts: [{ index: 0, name: 'Base plate', parent_name: 'Gearbox', triangle_count: 12, color: '#8c9199' }],
+    },
+  ],
   'bad.step': [422, { detail: "This doesn't look like a STEP file." }],
   'boom.step': [500, { detail: 'internal' }],
 };
@@ -34,13 +43,20 @@ describe('converter client', () => {
     expect(await createConverterClient('http://127.0.0.1:9').health()).toBe('down');
   });
 
-  it('returns the conversion result', async () => {
+  it('returns the conversion result in camelCase', async () => {
     const result = await createConverterClient(baseUrl).convert({
       inputPath: 'good.step',
       outputPath: 'models/x.glb',
       quality: 'standard',
     });
-    expect(result).toEqual({ part_count: 7, triangle_count: 1188 });
+    expect(result).toEqual({
+      glbBytes: 4500,
+      partCount: 1,
+      triangleCount: 12,
+      bounds: { min: [0, 0, 0], max: [1, 1, 1], units: 'm' },
+      seconds: null,
+      parts: [{ index: 0, name: 'Base plate', parentName: 'Gearbox', triangleCount: 12, color: '#8c9199' }],
+    });
   });
 
   it('marks file problems (422) as safe to show the user', async () => {
