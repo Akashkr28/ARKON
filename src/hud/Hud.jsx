@@ -1,0 +1,133 @@
+import { useShallow } from 'zustand/react/shallow';
+import { useViewerStore } from '../store/viewerStore';
+import { useHandStore } from '../store/handStore';
+import HandCards from './HandCards';
+import RadialMenu from './RadialMenu';
+import PartInfoCard from './PartInfoCard';
+import GestureLegend from './GestureLegend';
+import * as actions from '../actions/viewerActions';
+import { MODELS } from '../config';
+import './hud.css';
+
+function ToggleButton({ label, hotkey, active, onClick }) {
+  return (
+    <button type="button" className={`hud-toggle${active ? ' is-active' : ''}`} onClick={onClick}>
+      <span>{label}</span>
+      {hotkey && <kbd>{hotkey}</kbd>}
+    </button>
+  );
+}
+
+function ControlPanel() {
+  // Only the fields the panel shows, so per-frame state (rotation, spin) doesn't re-render it.
+  const s = useViewerStore(
+    useShallow((state) => ({
+      mirror: state.mirror,
+      grayscale: state.grayscale,
+      labels: state.labels,
+      debug: state.debug,
+      materialMode: state.materialMode,
+      dim: state.dim,
+      cameras: state.cameras,
+      activeCameraId: state.activeCameraId,
+      modelId: state.modelId,
+    })),
+  );
+
+  return (
+    <div className="hud-panel hud-controls">
+      <div className="hud-panel-title">HOLOCAD // VIEW</div>
+      <ToggleButton label="MIRROR" hotkey="F" active={s.mirror} onClick={actions.toggleMirror} />
+      <ToggleButton label="B&W" hotkey="B" active={s.grayscale} onClick={actions.toggleGrayscale} />
+      <ToggleButton label="LABELS" hotkey="L" active={s.labels} onClick={actions.toggleLabels} />
+      <ToggleButton label="DEBUG" hotkey="D" active={s.debug} onClick={actions.toggleDebug} />
+      <ToggleButton
+        label={s.materialMode === 'hologram' ? 'HOLOGRAM' : 'ORIGINAL'}
+        hotkey="M"
+        active={s.materialMode === 'hologram'}
+        onClick={actions.toggleMaterialMode}
+      />
+
+      <label className="hud-field">
+        <span>DIM {Math.round(s.dim * 100)}%</span>
+        <input
+          type="range"
+          min="0"
+          max="0.8"
+          step="0.05"
+          value={s.dim}
+          onChange={(e) => actions.setDim(Number(e.target.value))}
+        />
+      </label>
+
+      <label className="hud-field">
+        <span>CAMERA <kbd>C</kbd></span>
+        <select
+          value={s.activeCameraId ?? ''}
+          onChange={(e) => actions.selectCamera(e.target.value)}
+          disabled={s.cameras.length === 0}
+        >
+          {s.cameras.length === 0 && <option value="">—</option>}
+          {s.cameras.map((camera) => (
+            <option key={camera.id} value={camera.id}>
+              {camera.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="hud-field">
+        <span>MODEL</span>
+        <select value={s.modelId} onChange={(e) => actions.loadModel(e.target.value)}>
+          {MODELS.map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+const TRACKER_TEXT = {
+  idle: 'TRACKING OFF',
+  loading: 'LOADING HAND TRACKING…',
+  ready: 'TRACKING ONLINE',
+  error: 'TRACKING OFFLINE',
+};
+
+function StatusLine() {
+  const modelStatus = useViewerStore((s) => s.modelStatus);
+  const partCount = useViewerStore((s) => Object.keys(s.parts).length);
+  const exploded = useViewerStore((s) => s.explodeTarget > 0.05);
+  const trackerStatus = useHandStore((s) => s.status);
+  const gestureState = useHandStore((s) => s.gestureState);
+
+  const modelText =
+    modelStatus === 'loading'
+      ? 'LOADING MODEL…'
+      : modelStatus === 'ready'
+        ? `MODEL ONLINE · ${partCount} PARTS${exploded ? ' · EXPLODED' : ''}`
+        : 'MODEL OFFLINE';
+
+  return (
+    <div className="hud-panel hud-status">
+      {modelText} · {TRACKER_TEXT[trackerStatus]}
+      {trackerStatus === 'ready' && <span className="hud-gesture-state"> · {gestureState}</span>}
+    </div>
+  );
+}
+
+export default function Hud() {
+  return (
+    <div className="hud">
+      <HandCards />
+      <RadialMenu />
+      <StatusLine />
+      <PartInfoCard />
+      <ControlPanel />
+      <GestureLegend />
+    </div>
+  );
+}
