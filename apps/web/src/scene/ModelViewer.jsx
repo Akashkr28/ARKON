@@ -60,7 +60,7 @@ export default function ModelViewer({ url }) {
 }
 
 function LoadedModel({ scene }) {
-  const { root, parts } = useMemo(() => prepareModel(scene), [scene]);
+  const { root, parts, metresPerSceneUnit, modelSize } = useMemo(() => prepareModel(scene), [scene]);
   const partsById = useMemo(() => new Map(parts.map((p) => [p.id, p])), [parts]);
   const hologramMaterial = useMemo(() => createHologramMaterial(), []);
   const selectedMaterial = useMemo(() => createHologramMaterial(HOLOGRAM.selectedColor), []);
@@ -73,8 +73,8 @@ function LoadedModel({ scene }) {
   const pulledParts = useRef(new Set()); // parts with a non-zero pull to animate
 
   useEffect(() => {
-    modelLoaded(parts.map((p) => p.info));
-  }, [parts]);
+    modelLoaded(parts.map((p) => p.info), { metresPerSceneUnit, modelSize });
+  }, [parts, metresPerSceneUnit, modelSize]);
 
   useEffect(() => registerPicker(createPicker(root, camera)), [root, camera]);
 

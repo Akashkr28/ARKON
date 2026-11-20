@@ -74,5 +74,10 @@ export function prepareModel(gltfScene) {
     };
   });
 
-  return { root, parts };
+  // The viewer shows every model at the same size; this is how to get back to real
+  // lengths (metres, per the glTF spec) for dimensions and measurements.
+  const metresPerSceneUnit = 1 / unitScale;
+  const modelSize = bounds.getSize(new Vector3()).toArray();
+
+  return { root, parts, metresPerSceneUnit, modelSize };
 }

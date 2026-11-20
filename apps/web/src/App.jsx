@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useViewerStore } from './store/viewerStore';
 import { useWebcam } from './video/useWebcam';
 import { bindKeyboard } from './input/keyboard';
-import { bindMouse } from './input/mouse';
+import { bindPointer } from './input/pointer';
 import { refreshLibrary } from './actions/libraryActions';
 import Scene from './scene/Scene';
 import Hud from './hud/Hud';
@@ -27,7 +27,7 @@ export default function App() {
   const trackerError = useHandStore((s) => s.error);
 
   useEffect(() => bindKeyboard(), []);
-  useEffect(() => bindMouse(), []);
+  useEffect(() => bindPointer(), []);
   useEffect(() => {
     refreshLibrary();
   }, []);

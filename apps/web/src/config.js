@@ -78,8 +78,9 @@ export const VIEW = {
   cameraZ: 5,
   // Every model is scaled so its bounding sphere has this radius (scene units).
   modelRadius: 1,
-  minScale: 0.25,
-  maxScale: 4,
+  // Zoom range (the model is scaled; the camera stays put).
+  minScale: 0.1,
+  maxScale: 20,
   maxExplode: 1.5,
   // Higher = snappier. Used as 1 - exp(-damping * dt) so it's frame-rate independent.
   transformDamping: 12,
@@ -91,6 +92,14 @@ export const VIEW = {
   pullDamping: 14,
   // Picking also tries points this far (in NDC) around the pinch, for thin parts.
   pickRadiusNdc: 0.025,
+};
+
+// Mouse, trackpad and touch navigation.
+export const NAVIGATION = {
+  rotatePerPixel: 0.008, // radians of model rotation per pixel dragged
+  wheelZoomPerPixel: 0.0015, // zoom factor = exp(-deltaY × this)
+  // A press that moves less than this is a click (select), not a drag.
+  dragThresholdPx: 4,
 };
 
 export const TRACKING = {

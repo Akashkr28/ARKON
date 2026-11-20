@@ -82,7 +82,23 @@ and their attribution are listed in `apps/web/public/models/ATTRIBUTION.md`.
 | 👌 Pinch and hold on empty space ~0.6 s | Radial menu: move toward an item, release to choose (EXPLODE/ASSEMBLE, RESET, MATERIAL, SPAWN HERE) |
 | 👏 Clap | Reassemble |
 
-Mouse: double-click to move the model to the cursor; while exploded, click a part to select it.
+## Mouse, trackpad and touch
+
+| Input | What it does |
+|---|---|
+| Left drag / one finger | Rotate (horizontal turns around the vertical axis, vertical tilts) |
+| Right or middle drag, Shift + left drag | Pan |
+| Wheel / trackpad scroll / pinch | Zoom toward the cursor (between the fingers) |
+| Click a part (while exploded) | Select it and show its info card |
+| Double-click | Move the model to the cursor |
+
+The left toolbar has **FIT** and the standard views (FRONT, RIGHT, TOP, ISO, BACK, LEFT, BOTTOM),
+plus the length unit (mm, cm, m, in). Sizes are real: the status line shows the model's overall
+dimensions, the part card each part's bounding box. STEP models are measured in their CAD units;
+uploaded GLBs are assumed to be in metres, as the glTF standard requires.
+
+The camera never moves (hand tracking depends on it); navigation moves, turns and scales the
+model, through the same `viewerActions` as gestures.
 
 A gesture has to be held for 4 tracked frames (~0.13 s) before it counts. The yellow word in the
 status bar is the current gesture state; press **D** to see skeletons, poses and timings.
@@ -100,6 +116,8 @@ status bar is the current gesture state; press **D** to see skeletons, poses and
 | B | Black & white video |
 | C | Next camera |
 | Esc | Deselect part |
+| 0 | Fit to screen |
+| 1 / 3 / 7 / 5 | Front / right / top / iso view (Blender numpad layout) |
 
 ## Quality
 

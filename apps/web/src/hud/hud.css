@@ -246,6 +246,55 @@
   color: #ff8090;
 }
 
+/* Vertical view toolbar on the left edge. */
+.view-toolbar {
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+}
+
+.view-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-width: 86px;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(46, 230, 255, 0.75);
+  background: transparent;
+  border: 1px solid rgba(46, 230, 255, 0.25);
+  border-radius: 3px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.view-button:hover {
+  color: #021018;
+  background: var(--cyan);
+}
+
+.view-button.view-fit {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  margin-bottom: 4px;
+}
+
+.view-toolbar select {
+  margin-top: 4px;
+  font: inherit;
+  font-size: 10px;
+  color: var(--cyan);
+  background: rgba(2, 16, 24, 0.8);
+  border: 1px solid rgba(46, 230, 255, 0.3);
+  border-radius: 3px;
+}
+
 .quality-hint {
   bottom: 70px;
   left: 50%;

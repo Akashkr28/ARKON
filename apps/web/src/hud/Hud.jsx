@@ -8,6 +8,8 @@ import GestureLegend from './GestureLegend';
 import LibraryPanel from './LibraryPanel';
 import DropOverlay from './DropOverlay';
 import QualityHint from './QualityHint';
+import ViewToolbar from './ViewToolbar';
+import { formatSize } from '../units';
 import * as actions from '../actions/viewerActions';
 import { changeQuality, quality } from '../quality';
 import { QUALITY_LEVELS, QUALITY_PRESETS } from '../config';
@@ -109,6 +111,8 @@ function StatusLine() {
   const modelStatus = useViewerStore((s) => s.modelStatus);
   const partCount = useViewerStore((s) => Object.keys(s.parts).length);
   const exploded = useViewerStore((s) => s.explodeTarget > 0.05);
+  const modelSize = useViewerStore((s) => s.modelSize);
+  const unit = useViewerStore((s) => s.lengthUnit);
   const trackerStatus = useHandStore((s) => s.status);
   const gestureState = useHandStore((s) => s.gestureState);
 
@@ -116,7 +120,7 @@ function StatusLine() {
     modelStatus === 'loading'
       ? 'LOADING MODEL…'
       : modelStatus === 'ready'
-        ? `MODEL ONLINE · ${partCount} PARTS${exploded ? ' · EXPLODED' : ''}`
+        ? `MODEL ONLINE · ${partCount} PARTS${modelSize ? ` · ${formatSize(modelSize, unit).toUpperCase()}` : ''}${exploded ? ' · EXPLODED' : ''}`
         : 'MODEL OFFLINE';
 
   return (
@@ -138,6 +142,7 @@ export default function Hud() {
         <ControlPanel />
         <LibraryPanel />
       </div>
+      <ViewToolbar />
       <GestureLegend />
       <QualityHint />
       <DropOverlay />

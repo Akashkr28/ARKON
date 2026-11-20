@@ -22,6 +22,14 @@ body,
   height: 100vh;
   overflow: hidden;
   isolation: isolate;
+  /* Touch drags and pinches drive the model, not browser scrolling or page zoom. */
+  touch-action: none;
+  cursor: grab;
+}
+
+body.is-navigating,
+body.is-navigating * {
+  cursor: grabbing !important;
 }
 
 .webcam,

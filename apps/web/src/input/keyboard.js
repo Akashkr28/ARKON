@@ -10,6 +10,12 @@ const SHORTCUTS = {
   r: actions.resetModel,
   m: actions.toggleMaterialMode,
   escape: actions.clearSelection,
+  // Views, laid out like Blender's numpad (works on the number row too).
+  0: actions.fitToView,
+  1: () => actions.setView('front'),
+  3: () => actions.setView('right'),
+  7: () => actions.setView('top'),
+  5: () => actions.setView('iso'),
 };
 
 function isTyping(target) {

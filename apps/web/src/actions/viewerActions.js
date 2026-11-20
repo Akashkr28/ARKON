@@ -1,6 +1,8 @@
 import { useViewerStore, initialTransform } from '../store/viewerStore';
 import { VIEW } from '../config';
 import { findModelEntry } from '../models/catalog';
+import { VIEW_PRESETS, fitScale, nearestAngle } from '../scene/viewPresets';
+import { LENGTH_UNITS } from '../units';
 
 // The single place that changes viewer state. Gestures, keyboard, and (later) the AI
 // assistant and collaborators all call these functions with plain, serializable args.
@@ -59,6 +61,40 @@ export function scaleBy(factor) {
   scaleTo(get().scale * factor);
 }
 
+// Zoom around a point on the model's plane (scene units), keeping that point fixed
+// on screen, like zooming toward the mouse cursor in CAD tools.
+export function zoomAbout(x, y, factor) {
+  const { scale, position } = get();
+  const next = clamp(scale * factor, VIEW.minScale, VIEW.maxScale);
+  const applied = next / scale;
+  const [px, py, pz] = position;
+  set({ scale: next, position: [x + (px - x) * applied, y + (py - y) * applied, pz] });
+  emit('zoomAbout', { x, y, factor });
+}
+
+// Turn the model to a standard view: front, back, left, right, top, bottom or iso.
+export function setView(name) {
+  const preset = VIEW_PRESETS[name];
+  if (!preset) return false;
+  const [x, y] = get().rotation;
+  const [targetX, targetY] = preset.rotation;
+  set({ rotation: [nearestAngle(x, targetX), nearestAngle(y, targetY), 0], spinVelocity: [0, 0] });
+  emit('setView', { name });
+  return true;
+}
+
+// Centre the model and size it to fit the screen (accounting for any explode),
+// keeping its current orientation.
+export function fitToView() {
+  set({ position: [0, 0, 0], scale: fitScale(get().explodeTarget), spinVelocity: [0, 0] });
+  emit('fitToView');
+}
+
+export function setLengthUnit(unit) {
+  if (!LENGTH_UNITS[unit]) return;
+  set({ lengthUnit: unit });
+}
+
 export function spawnAt(x, y, z = 0) {
   set({ modelVisible: true, position: [x, y, z], spinVelocity: [0, 0] });
   emit('spawnAt', { x, y, z });
@@ -94,9 +130,15 @@ export function isExploded() {
   return get().explodeTarget > 0.05;
 }
 
+// Keyboard/menu explode: also shrink the view so the exploded parts stay on screen
+// (gesture explodes are continuous, so they don't refit).
 export function toggleExplode() {
   if (isExploded()) assemble();
-  else explode(1);
+  else {
+    explode(1);
+    const fit = fitScale(1);
+    if (get().scale > fit) set({ scale: fit, position: [0, 0, 0] });
+  }
 }
 
 export function selectPart(partId) {
@@ -154,10 +196,18 @@ export function loadModel(modelId) {
   return true;
 }
 
-export function modelLoaded(partList) {
+// `units` says how scene lengths map to real ones: metresPerSceneUnit at scale 1,
+// and the model's overall size in metres.
+export function modelLoaded(partList, units = {}) {
   const parts = {};
   for (const part of partList) parts[part.id] = part;
-  set({ modelStatus: 'ready', modelError: null, parts });
+  set({
+    modelStatus: 'ready',
+    modelError: null,
+    parts,
+    metresPerSceneUnit: units.metresPerSceneUnit ?? 1,
+    modelSize: units.modelSize ?? null,
+  });
 }
 
 export function modelFailed(message) {

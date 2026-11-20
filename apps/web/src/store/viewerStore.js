@@ -19,7 +19,11 @@ export const useViewerStore = create(() => ({
   spinVelocity: [0, 0], // radians/sec around x and y
 
   explodeTarget: 0,
-  parts: {}, // id -> { id, name, vertexCount, size: [x, y, z] }
+  parts: {}, // id -> { id, name, vertexCount, size: [x, y, z] in metres }
+  // Real-world units: the model is shown normalised, these map back to metres.
+  metresPerSceneUnit: 1,
+  modelSize: null, // [x, y, z] metres, whole model
+  lengthUnit: 'mm', // display unit: 'mm' | 'cm' | 'm' | 'in'
   selectedPartId: null,
   partPull: [0, 0, 0], // world-space offset of the selected part, on top of the explode
   infoPartId: null, // part whose info card is showing

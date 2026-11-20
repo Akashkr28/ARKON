@@ -1,12 +1,10 @@
 import { useViewerStore } from '../store/viewerStore';
 import { clearSelection } from '../actions/viewerActions';
-
-function formatSize(size) {
-  return size.map((v) => (v >= 100 ? v.toFixed(0) : v.toPrecision(3))).join(' × ');
-}
+import { formatSize } from '../units';
 
 export default function PartInfoCard() {
   const part = useViewerStore((s) => (s.infoPartId ? s.parts[s.infoPartId] : null));
+  const unit = useViewerStore((s) => s.lengthUnit);
   if (!part) return null;
 
   return (
@@ -21,10 +19,10 @@ export default function PartInfoCard() {
       <dl>
         <dt>VERTICES</dt>
         <dd>{part.vertexCount.toLocaleString()}</dd>
-        <dt>BOUNDS</dt>
-        <dd>{formatSize(part.size)}</dd>
+        <dt>SIZE</dt>
+        <dd>{formatSize(part.size, unit)}</dd>
       </dl>
-      <div className="part-info-hint">model units · ESC to deselect</div>
+      <div className="part-info-hint">bounding box, real units · ESC to deselect</div>
     </div>
   );
 }
