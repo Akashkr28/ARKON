@@ -2,6 +2,7 @@
 
 import math
 import os
+import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -18,7 +19,9 @@ from OCP.Message import Message_ProgressRange
 from OCP.RWGltf import RWGltf_CafWriter
 from OCP.RWMesh import RWMesh_CoordinateSystem, RWMesh_NameFormat
 from OCP.STEPCAFControl import STEPCAFControl_Reader
-from OCP.TCollection import TCollection_AsciiString
+from OCP.TCollection import TCollection_AsciiString, TCollection_ExtendedString
+from OCP.TDataStd import TDataStd_Name
+from OCP.TDF import TDF_Label
 from OCP.XCAFDoc import XCAFDoc_ShapeTool
 
 from .cad_document import DOCUMENT_UNIT_IN_METRES, new_document, shape_tool
@@ -28,6 +31,7 @@ from .occt_messages import configure_occt_output
 configure_occt_output()
 
 STEP_SIGNATURE = b"ISO-10303-21;"
+AUTO_INSTANCE_NAME = re.compile(r"^=>\[[\d:]+\]$")
 
 
 @dataclass(frozen=True)
@@ -91,6 +95,42 @@ def _read_step(path: Path):
     return doc
 
 
+def _label_name(label) -> str | None:
+    attr = TDataStd_Name()
+    return attr.Get().ToExtString() if label.FindAttribute(TDataStd_Name.GetID_s(), attr) else None
+
+
+def _tidy_instance_names(doc):
+    """Give unnamed instances their part's name.
+
+    The STEP reader names an instance "=>[0:1:1:3]" when the file doesn't name it.
+    We name GLB nodes instance-first (so "Left arm" and "Right arm" stay distinct),
+    which would otherwise put those placeholders in the viewer's labels.
+    """
+    tool = shape_tool(doc)
+    roots = Sequence_TDF_Label()
+    tool.GetFreeShapes(roots)
+    pending = [roots.Value(i) for i in range(1, roots.Length() + 1)]
+    seen = set()
+    while pending:
+        assembly = pending.pop()
+        if assembly.Tag() in seen or not XCAFDoc_ShapeTool.IsAssembly_s(assembly):
+            continue
+        seen.add(assembly.Tag())
+        components = Sequence_TDF_Label()
+        XCAFDoc_ShapeTool.GetComponents_s(assembly, components, False)
+        for i in range(1, components.Length() + 1):
+            component = components.Value(i)
+            part = TDF_Label()
+            if not XCAFDoc_ShapeTool.GetReferredShape_s(component, part):
+                continue
+            name = _label_name(component)
+            part_name = _label_name(part)
+            if part_name and (not name or AUTO_INSTANCE_NAME.match(name)):
+                TDataStd_Name.Set_s(component, TCollection_ExtendedString(part_name))
+            pending.append(part)
+
+
 def _top_level_shapes(doc):
     labels = Sequence_TDF_Label()
     shape_tool(doc).GetFreeShapes(labels)
@@ -136,8 +176,9 @@ def _write_glb(doc, path: Path):
     axes.SetInputCoordinateSystem(RWMesh_CoordinateSystem.RWMesh_CoordinateSystem_Zup)
     axes.SetOutputLengthUnit(1.0)
     axes.SetOutputCoordinateSystem(RWMesh_CoordinateSystem.RWMesh_CoordinateSystem_glTF)
-    # Name nodes after the part (product) so labels read "Drive gear", not "=>[0:1:1:2]".
-    writer.SetNodeNameFormat(RWMesh_NameFormat.RWMesh_NameFormat_ProductOrInstance)
+    # Name nodes after the instance when the CAD file names it ("Left arm"), else the
+    # part (product) ("Drive gear"); never OCCT's internal labels like "=>[0:1:1:2]".
+    writer.SetNodeNameFormat(RWMesh_NameFormat.RWMesh_NameFormat_InstanceOrProduct)
     writer.SetMeshNameFormat(RWMesh_NameFormat.RWMesh_NameFormat_Product)
     # One primitive per part instead of one per B-rep face: the viewer explodes per mesh.
     writer.SetMergeFaces(True)
@@ -156,6 +197,7 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
         raise ValueError(f"Unknown quality {quality!r}; use one of {sorted(QUALITY)}")
 
     doc = _read_step(input_path)
+    _tidy_instance_names(doc)
     shapes = _top_level_shapes(doc)
     box = _bounding_box(shapes)
     _tessellate(shapes, box, QUALITY[quality])

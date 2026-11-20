@@ -4,7 +4,9 @@ const base = import.meta.env.BASE_URL;
 
 // Bundled sample models, available even when the API is offline. Your own models
 // are uploaded through the LIBRARY panel (or dropped onto the window) instead.
+// The first entry is what opens on startup.
 export const MODELS = [
+  { id: 'exosuit', label: 'Sentinel Mk I Exosuit', url: `${base}models/SentinelExosuit.glb` },
   { id: 'engine', label: '2-Cylinder Engine', url: `${base}models/2CylinderEngine.glb` },
   { id: 'gearbox', label: 'Gearbox Assembly', url: `${base}models/GearboxAssy.glb` },
 ];
