@@ -11,7 +11,7 @@
     "dev:converter": "cd services/converter && uv run uvicorn holocad_converter.app:app --host 127.0.0.1 --port 8001 --reload",
     "setup:converter": "cd services/converter && uv sync",
     "build": "npm run build -w @holocad/web",
-    "test": "npm test -w @holocad/api && npm run test:converter",
+    "test": "npm test -w @holocad/web && npm test -w @holocad/api && npm run test:converter",
     "test:converter": "cd services/converter && uv run pytest -q",
     "db:migrate": "npm run db:migrate -w @holocad/api",
     "db:start": "node scripts/local-db.mjs start",

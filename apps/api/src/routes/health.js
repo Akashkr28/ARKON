@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
-export function healthRouter({ db, converter }) {
+// `limits` lets the web app check a file's size before uploading it.
+export function healthRouter({ db, converter, limits = {} }) {
   const router = Router();
 
   router.get('/health', async (req, res) => {
@@ -16,6 +17,7 @@ export function healthRouter({ db, converter }) {
       status: ok ? 'ok' : 'degraded',
       database,
       converter: converterStatus,
+      limits,
     });
   });
 

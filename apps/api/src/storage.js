@@ -1,4 +1,4 @@
-import { mkdir, open, rename, rm } from 'node:fs/promises';
+import { mkdir, open, readdir, rename, rm } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
 
 // Files live under one root, shared with the converter. The database stores paths
@@ -10,6 +10,22 @@ export function createStorage(root) {
     for (const dir of ['uploads', 'models', 'tmp']) {
       await mkdir(join(root, dir), { recursive: true });
     }
+  }
+
+  // Leftovers from a crash: half-received uploads in tmp/ and half-written GLBs
+  // (*.partial) from the converter. Safe at startup, when nothing is in flight.
+  async function removeLeftovers() {
+    const removed = [];
+    for (const name of await readdir(tmpDir)) {
+      await rm(join(tmpDir, name), { recursive: true, force: true });
+      removed.push(`tmp/${name}`);
+    }
+    for (const name of await readdir(join(root, 'models'))) {
+      if (!name.endsWith('.partial')) continue;
+      await rm(join(root, 'models', name), { force: true });
+      removed.push(`models/${name}`);
+    }
+    return removed;
   }
 
   function absolute(relative) {
@@ -30,6 +46,7 @@ export function createStorage(root) {
     root,
     tmpDir,
     init,
+    removeLeftovers,
     absolute,
     moveIn,
     remove,

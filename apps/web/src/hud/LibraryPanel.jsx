@@ -91,9 +91,16 @@ function UploadRow({ upload }) {
 
 export default function LibraryPanel() {
   const fileInput = useRef(null);
-  const { apiStatus, models, uploads, quality } = useLibraryStore(
-    useShallow((s) => ({ apiStatus: s.apiStatus, models: s.models, uploads: s.uploads, quality: s.quality })),
+  const { apiStatus, converterStatus, models, uploads, quality } = useLibraryStore(
+    useShallow((s) => ({
+      apiStatus: s.apiStatus,
+      converterStatus: s.converterStatus,
+      models: s.models,
+      uploads: s.uploads,
+      quality: s.quality,
+    })),
   );
+  const waitingOnConverter = converterStatus === 'down' && models.some((m) => m.status === 'queued');
   const activeId = useViewerStore((s) => s.modelId);
   const online = apiStatus === 'online';
 
@@ -134,6 +141,12 @@ export default function LibraryPanel() {
         <div className="library-offline">
           Uploads need the API. Run <code>npm run dev</code>, and <code>npm run db:start</code> for the database.
           <button type="button" onClick={library.refreshLibrary}>RETRY</button>
+        </div>
+      )}
+      {online && waitingOnConverter && (
+        <div className="library-offline">
+          The STEP converter isn&apos;t running, so queued models are waiting. Start it with{' '}
+          <code>npm run dev</code> (or <code>npm run dev:converter</code>); they&apos;ll convert automatically.
         </div>
       )}
 

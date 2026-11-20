@@ -1,11 +1,13 @@
 // Talks to the Python converter service (services/converter) over loopback HTTP.
 
 export class ConverterError extends Error {
-  constructor(message, { status, userFacing = false } = {}) {
-    super(message);
+  constructor(message, { status, userFacing = false, retryable = false, cause } = {}) {
+    super(message, { cause });
     this.status = status;
     // True when the message describes a problem with the user's file and is safe to show.
     this.userFacing = userFacing;
+    // True when the converter couldn't be reached at all: try again later, don't fail the job.
+    this.retryable = retryable;
   }
 }
 
@@ -27,7 +29,7 @@ function normalizeResult(body) {
   };
 }
 
-export function createConverterClient(baseUrl) {
+export function createConverterClient(baseUrl, { timeoutMs = 10 * 60_000 } = {}) {
   async function health() {
     try {
       const res = await fetch(`${baseUrl}/health`, { signal: AbortSignal.timeout(1500) });
@@ -38,7 +40,7 @@ export function createConverterClient(baseUrl) {
   }
 
   // Paths are relative to STORAGE_DIR, which both services share.
-  async function convert({ inputPath, outputPath, quality }, { timeoutMs = 10 * 60_000 } = {}) {
+  async function convert({ inputPath, outputPath, quality }) {
     let res;
     try {
       res = await fetch(`${baseUrl}/convert`, {
@@ -48,8 +50,15 @@ export function createConverterClient(baseUrl) {
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
-      const reason = error.name === 'TimeoutError' ? 'timed out' : 'is not reachable';
-      throw new ConverterError(`Converter ${reason} at ${baseUrl}`, { cause: error });
+      if (error.name === 'TimeoutError') {
+        const minutes = Math.round(timeoutMs / 60_000);
+        throw new ConverterError(
+          `Conversion took longer than ${minutes} minute${minutes === 1 ? '' : 's'}. ` +
+            'Try DRAFT quality, or split the assembly into smaller files.',
+          { userFacing: true, cause: error },
+        );
+      }
+      throw new ConverterError(`Converter is not reachable at ${baseUrl}`, { retryable: true, cause: error });
     }
 
     const body = await res.json().catch(() => ({}));

@@ -31,6 +31,8 @@ export const useViewerStore = create(() => ({
   debug: false,
   materialMode: 'hologram', // 'hologram' | 'original'
 
+  qualityHint: null, // a lower quality level to suggest when rendering is slow
+
   cameras: [], // [{ id, label }]
   requestedCameraId: null, // what we ask getUserMedia for
   activeCameraId: null, // what the browser actually gave us

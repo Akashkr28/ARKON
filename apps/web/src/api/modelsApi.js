@@ -21,6 +21,17 @@ async function request(path, options = {}) {
   return body;
 }
 
+// Health answers 503 with a JSON body when the database or converter is down; that's
+// still useful information, so don't treat it as an error. No JSON = API offline.
+export async function getHealth() {
+  try {
+    const res = await fetch('/api/health');
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function listModels() {
   return (await request('/models')).models;
 }

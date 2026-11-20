@@ -1,7 +1,8 @@
-import { Component } from 'react';
+import { Component, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useViewerStore } from '../store/viewerStore';
-import { modelFailed, tick } from '../actions/viewerActions';
+import { modelFailed, suggestQuality, tick } from '../actions/viewerActions';
+import { SlowFrameDetector, nextLowerLevel, preset, quality } from '../quality';
 import { VIEW } from '../config';
 import { useLibraryStore } from '../store/libraryStore';
 import { findModelEntry } from '../models/catalog';
@@ -30,6 +31,17 @@ function ViewerClock() {
   return null;
 }
 
+// Watches the render frame rate and, once, suggests the next quality level down.
+function PerformanceWatch() {
+  const detector = useMemo(() => new SlowFrameDetector(), []);
+  useFrame((_, dt) => {
+    if (!detector.update(dt)) return;
+    const lower = nextLowerLevel(quality.level);
+    if (lower) suggestQuality(lower);
+  });
+  return null;
+}
+
 export default function Scene() {
   const modelId = useViewerStore((s) => s.modelId);
   const modelLoadCount = useViewerStore((s) => s.modelLoadCount);
@@ -44,8 +56,8 @@ export default function Scene() {
     <Canvas
       className="scene"
       style={{ mixBlendMode: hologram ? 'screen' : 'normal' }}
-      gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
-      dpr={[1, 1.5]}
+      gl={{ alpha: true, antialias: preset.antialias, powerPreference: 'high-performance' }}
+      dpr={[1, preset.maxPixelRatio]}
       camera={{ fov: VIEW.cameraFov, position: [0, 0, VIEW.cameraZ], near: 0.1, far: 100 }}
     >
       {hologram && <color attach="background" args={['#000000']} />}
@@ -54,7 +66,8 @@ export default function Scene() {
       <directionalLight position={[-4, -2, -3]} intensity={0.6} />
 
       <ViewerClock />
-      {/* TODO(depth): Depth Anything occlusion — render a depth mask here so hands can pass in front of the model. */}
+      <PerformanceWatch />
+      {/* TODO(depth): hand occlusion — depth-only hand/forearm capsules so hands pass in front of the model (see integrations/README.md). */}
       {model && (
         <ModelErrorBoundary key={`${modelId}:${modelLoadCount}`}>
           <ModelViewer url={model.url} />

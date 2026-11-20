@@ -7,7 +7,10 @@ import PartInfoCard from './PartInfoCard';
 import GestureLegend from './GestureLegend';
 import LibraryPanel from './LibraryPanel';
 import DropOverlay from './DropOverlay';
+import QualityHint from './QualityHint';
 import * as actions from '../actions/viewerActions';
+import { changeQuality, quality } from '../quality';
+import { QUALITY_LEVELS, QUALITY_PRESETS } from '../config';
 import './hud.css';
 
 function ToggleButton({ label, hotkey, active, onClick }) {
@@ -58,6 +61,22 @@ function ControlPanel() {
           value={s.dim}
           onChange={(e) => actions.setDim(Number(e.target.value))}
         />
+      </label>
+
+      <label className="hud-field">
+        <span>QUALITY</span>
+        <select
+          value={quality.auto ? 'auto' : quality.level}
+          onChange={(e) => changeQuality(e.target.value)}
+          title={QUALITY_PRESETS[quality.level].description}
+        >
+          <option value="auto">AUTO · {QUALITY_PRESETS[quality.level].label}</option>
+          {QUALITY_LEVELS.map((level) => (
+            <option key={level} value={level}>
+              {QUALITY_PRESETS[level].label}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="hud-field">
@@ -120,6 +139,7 @@ export default function Hud() {
         <LibraryPanel />
       </div>
       <GestureLegend />
+      <QualityHint />
       <DropOverlay />
     </div>
   );

@@ -252,6 +252,20 @@ describe.skipIf(!testDatabaseUrl)('models API (against DATABASE_URL_TEST)', () =
   });
 
   describe('worker resilience', () => {
+    it('keeps jobs queued while the converter is down, then converts them', async () => {
+      converter.mode = 'unreachable';
+      const { body } = await uploadStep();
+      expect(await worker.processNext()).toBe(true);
+
+      let res = await request(app).get(`/api/models/${body.id}`);
+      expect(res.body).toMatchObject({ status: 'queued', error: null, job: { status: 'queued', attempts: 0 } });
+
+      converter.mode = 'ok';
+      await worker.processNext();
+      res = await request(app).get(`/api/models/${body.id}`);
+      expect(res.body).toMatchObject({ status: 'ready', job: { status: 'done', attempts: 1 } });
+    });
+
     it('re-queues jobs interrupted by a restart', async () => {
       const { body } = await uploadStep();
       await pool.query(`update conversion_jobs set status = 'running'`);

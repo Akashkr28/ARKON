@@ -37,16 +37,23 @@ function openReadyUploads() {
 
 function schedulePoll() {
   clearTimeout(pollTimer);
-  pollTimer = get().models.some(isPending) ? setTimeout(refreshLibrary, LIBRARY.pollMs) : null;
+  pollTimer = null;
+  if (get().apiStatus === 'offline') pollTimer = setTimeout(refreshLibrary, LIBRARY.offlineRetryMs);
+  else if (get().models.some(isPending)) pollTimer = setTimeout(refreshLibrary, LIBRARY.pollMs);
 }
 
 export async function refreshLibrary() {
-  try {
-    set({ models: await api.listModels(), apiStatus: 'online' });
+  const [models, health] = await Promise.all([api.listModels().catch(() => null), api.getHealth()]);
+  if (models) {
+    set({ models, apiStatus: 'online' });
     openReadyUploads();
-  } catch {
+  } else {
     set({ apiStatus: 'offline' });
   }
+  set({
+    converterStatus: health?.converter ?? 'unknown',
+    maxUploadBytes: health?.limits?.maxUploadBytes ?? get().maxUploadBytes,
+  });
   schedulePoll();
 }
 
@@ -67,6 +74,13 @@ export async function uploadFile(file) {
 
   if (!hasAcceptedExtension(file.name)) {
     updateUpload({ error: `Only ${LIBRARY.acceptedExtensions.join(', ')} files can be uploaded` });
+    return null;
+  }
+  // Fail fast instead of sending hundreds of MB just to get a 413 back.
+  const limit = get().maxUploadBytes;
+  if (limit && file.size > limit) {
+    const mb = (bytes) => Math.round(bytes / 1024 / 1024);
+    updateUpload({ error: `${file.name} is ${mb(file.size)} MB; the limit is ${mb(limit)} MB (MAX_UPLOAD_MB)` });
     return null;
   }
 

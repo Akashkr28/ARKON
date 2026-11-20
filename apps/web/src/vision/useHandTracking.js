@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useHandStore } from '../store/handStore';
 import { createGestureRecognizer, runDetectionLoop } from './handTracker';
 import { processResult, resetPipeline } from './handPipeline';
+import { preset } from '../quality';
 
 function describeTrackerError(error) {
   const message = error?.message ?? String(error);
@@ -26,13 +27,18 @@ export function useHandTracking(videoRef, enabled) {
     };
 
     useHandStore.setState({ status: 'loading', error: null });
-    createGestureRecognizer()
+    createGestureRecognizer(preset.delegate)
       .then(({ recognizer: created, delegate }) => {
         if (cancelled) return created.close();
         recognizer = created;
         useHandStore.setState({ status: 'ready', delegate });
-        stopLoop = runDetectionLoop(videoRef.current, created, (result, inferenceMs, now) =>
-          processResult(result, videoRef.current, inferenceMs, now), fail);
+        stopLoop = runDetectionLoop(
+          videoRef.current,
+          created,
+          (result, inferenceMs, now) => processResult(result, videoRef.current, inferenceMs, now),
+          fail,
+          { maxHz: preset.maxDetectHz },
+        );
       })
       .catch(fail);
 

@@ -5,6 +5,7 @@ import {
   finishJob,
   markConverting,
   requeueInterruptedJobs,
+  requeueJob,
 } from './models/modelQueries.js';
 import { withTransaction } from './db/transaction.js';
 
@@ -13,11 +14,21 @@ const SERVER_PROBLEM =
 
 // Pulls conversion jobs from Postgres one at a time and hands them to the converter.
 // Uploads call wake() so a new job starts immediately instead of on the next poll.
-export function createConversionWorker({ db, converter, storage, log = console, idlePollMs = 2000 }) {
+export function createConversionWorker({
+  db,
+  converter,
+  storage,
+  log = console,
+  idlePollMs = 2000,
+  // How long to wait before trying again when the converter isn't running.
+  converterRetryMs = 5000,
+}) {
   let running = false;
   let loopDone = null;
   let wakeSleeper = null;
   let lastLoopError = null;
+  let converterDown = false;
+  let backOff = false;
 
   async function processNext() {
     const job = await claimNextJob(db);
@@ -44,7 +55,18 @@ export function createConversionWorker({ db, converter, storage, log = console, 
         await storage.remove(outputPath);
         await finishJob(db, job.id, 'failed', 'Model was deleted during conversion');
       }
+      if (converterDown) log.info?.('Converter is reachable again; conversions resumed');
+      converterDown = false;
     } catch (error) {
+      if (error.retryable) {
+        // The converter isn't running (yet). Not the file's fault: put the job back
+        // and try again shortly, instead of failing every upload in the meantime.
+        await requeueJob(db, { jobId: job.id, modelId: job.model_id });
+        if (!converterDown) log.error(`${error.message}; conversions will wait until it is back.`);
+        converterDown = true;
+        backOff = true;
+        return true;
+      }
       if (!error.userFacing) log.error(`Conversion job ${job.id} failed:`, error);
       await failConversion(db, {
         jobId: job.id,
@@ -79,7 +101,12 @@ export function createConversionWorker({ db, converter, storage, log = console, 
         if (error.message !== lastLoopError) log.error('Conversion worker error:', error.message);
         lastLoopError = error.message;
       }
-      if (!didWork && running) await sleep(idlePollMs);
+      if (backOff && running) {
+        backOff = false;
+        await sleep(converterRetryMs);
+      } else if (!didWork && running) {
+        await sleep(idlePollMs);
+      }
     }
   }
 

@@ -185,6 +185,16 @@ export function toggleMaterialMode() {
   setMaterialMode(get().materialMode === 'hologram' ? 'original' : 'hologram');
 }
 
+// --- Performance -------------------------------------------------------------
+
+export function suggestQuality(level) {
+  set({ qualityHint: level });
+}
+
+export function dismissQualityHint() {
+  set({ qualityHint: null });
+}
+
 // --- Cameras ---------------------------------------------------------------
 
 export function setCameras(cameras, activeCameraId) {

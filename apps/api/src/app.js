@@ -10,7 +10,7 @@ export function createApp({ db, converter, storage, worker, maxUploadBytes }) {
   app.disable('x-powered-by');
   app.use(express.json({ limit: '100kb' }));
 
-  app.use('/api', healthRouter({ db, converter }));
+  app.use('/api', healthRouter({ db, converter, limits: { maxUploadBytes } }));
   if (storage) app.use('/api', modelsRouter({ db, storage, worker, maxUploadBytes }));
 
   app.use('/api', notFoundHandler);

@@ -23,6 +23,9 @@ from OCP.XCAFDoc import XCAFDoc_ShapeTool
 
 from .cad_document import DOCUMENT_UNIT_IN_METRES, new_document, shape_tool
 from .glb import list_parts
+from .occt_messages import configure_occt_output
+
+configure_occt_output()
 
 STEP_SIGNATURE = b"ISO-10303-21;"
 

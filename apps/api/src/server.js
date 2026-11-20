@@ -6,9 +6,11 @@ import { createStorage } from './storage.js';
 import { createConversionWorker } from './worker.js';
 
 const pool = createPool(config.databaseUrl);
-const converter = createConverterClient(config.converterUrl);
+const converter = createConverterClient(config.converterUrl, { timeoutMs: config.conversionTimeoutMs });
 const storage = createStorage(config.storageDir);
 await storage.init();
+const leftovers = await storage.removeLeftovers();
+if (leftovers.length) console.log(`Removed ${leftovers.length} leftover file(s) from an earlier run`);
 
 // TODO(scale-out): the worker assumes one API instance. Run it as its own process
 // (and drop requeueInterruptedJobs' assumption) before running several.

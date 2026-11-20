@@ -12,13 +12,63 @@ export const MODELS = [
 export const LIBRARY = {
   // While any model is queued or converting, its status is re-checked this often.
   pollMs: 1000,
+  // While the API is unreachable, check back this often so the panel recovers on its own.
+  offlineRetryMs: 5000,
   acceptedExtensions: ['.step', '.stp', '.glb'],
   defaultQuality: 'standard',
 };
 
-export const VIDEO = {
-  idealWidth: 1280,
-  idealHeight: 720,
+// Rendering/tracking quality. AUTO picks one per device (see quality.js); users can
+// override it in the HUD or with ?quality=low in the URL. Changing it reloads the page,
+// because camera resolution, antialiasing and the tracking delegate are fixed at startup.
+export const QUALITY_LEVELS = ['high', 'medium', 'low', 'safe'];
+export const QUALITY_PRESETS = {
+  high: {
+    label: 'HIGH',
+    description: '1080p camera, sharpest rendering, full glow',
+    camera: { width: 1920, height: 1080 },
+    maxPixelRatio: 2,
+    antialias: true,
+    bloom: 1, // multiplier on BLOOM.intensity; 0 turns the effect off
+    delegate: 'GPU',
+    maxDetectHz: 60,
+  },
+  medium: {
+    label: 'MEDIUM',
+    description: '720p camera, full glow; good for most laptops',
+    camera: { width: 1280, height: 720 },
+    maxPixelRatio: 1.5,
+    antialias: true,
+    bloom: 1,
+    delegate: 'GPU',
+    maxDetectHz: 30,
+  },
+  low: {
+    label: 'LOW',
+    description: '720p camera, lighter glow, no antialiasing',
+    camera: { width: 1280, height: 720 },
+    maxPixelRatio: 1,
+    antialias: false,
+    bloom: 0.6,
+    delegate: 'GPU',
+    maxDetectHz: 24,
+  },
+  safe: {
+    label: 'SAFE',
+    description: '480p camera, no glow, tracking on the CPU; use if the page won’t start',
+    camera: { width: 640, height: 480 },
+    maxPixelRatio: 1,
+    antialias: false,
+    bloom: 0,
+    delegate: 'CPU',
+    maxDetectHz: 15,
+  },
+};
+
+// If rendering stays below minFps for this many seconds, offer the next level down.
+export const PERFORMANCE = {
+  minFps: 20,
+  slowForSeconds: 6,
 };
 
 export const VIEW = {

@@ -151,6 +151,18 @@ export async function finishJob(db, jobId, status, error) {
   );
 }
 
+// Puts a claimed job back in the queue without counting it as an attempt
+// (used when the converter wasn't reachable, which isn't the job's fault).
+export async function requeueJob(db, { jobId, modelId }) {
+  await db.query(
+    `update conversion_jobs
+     set status = 'queued', started_at = null, attempts = greatest(attempts - 1, 0)
+     where id = $1`,
+    [jobId],
+  );
+  await db.query(`update models set status = 'queued' where id = $1 and status = 'converting'`, [modelId]);
+}
+
 // After a crash or restart, jobs left "running" will never finish; put them back.
 // Only safe while a single API instance runs the worker.
 export async function requeueInterruptedJobs(db) {

@@ -19,4 +19,6 @@ export const config = {
   storageDir: resolve(repoRoot, process.env.STORAGE_DIR ?? 'storage'),
   converterUrl: process.env.CONVERTER_URL ?? 'http://127.0.0.1:8001',
   maxUploadBytes: readInt('MAX_UPLOAD_MB', 200) * 1024 * 1024,
+  // A conversion still running after this long is reported to the user as failed.
+  conversionTimeoutMs: readInt('CONVERSION_TIMEOUT_MIN', 10) * 60_000,
 };

@@ -246,6 +246,30 @@
   color: #ff8090;
 }
 
+.quality-hint {
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: #ffe14f;
+  border-color: rgba(255, 225, 79, 0.6);
+  white-space: nowrap;
+}
+
+.quality-hint button {
+  font: inherit;
+  font-size: 11px;
+  color: inherit;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
 .drop-overlay {
   position: absolute;
   inset: 0;

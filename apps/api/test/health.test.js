@@ -19,7 +19,7 @@ describe('GET /api/health', () => {
   it('reports ok when the database and converter answer', async () => {
     const res = await request(app()).get('/api/health');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok', database: 'up', converter: 'up' });
+    expect(res.body).toEqual({ status: 'ok', database: 'up', converter: 'up', limits: {} });
   });
 
   it('reports degraded with 503 when the database is down', async () => {

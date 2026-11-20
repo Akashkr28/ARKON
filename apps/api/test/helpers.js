@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { createPool } from '../src/db/pool.js';
 import { migrate } from '../src/db/migrate.js';
 import { createStorage } from '../src/storage.js';
+import { ConverterError } from '../src/converterClient.js';
 
 export const testDatabaseUrl = process.env.DATABASE_URL_TEST;
 
@@ -55,7 +56,7 @@ export const STEP_TEXT = 'ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((\'test\'),\'
 // Stands in for the Python service: writes a GLB where asked, or fails on demand.
 export function fakeConverter(storage) {
   const fake = {
-    mode: 'ok', // 'ok' | 'bad-file' | 'crash'
+    mode: 'ok', // 'ok' | 'bad-file' | 'crash' | 'unreachable'
     calls: [],
     async health() {
       return 'up';
@@ -66,6 +67,9 @@ export function fakeConverter(storage) {
         throw Object.assign(new Error("This doesn't look like a STEP file."), { userFacing: true });
       }
       if (fake.mode === 'crash') throw new Error('converter exploded');
+      if (fake.mode === 'unreachable') {
+        throw new ConverterError('Converter is not reachable at http://127.0.0.1:8001', { retryable: true });
+      }
       const glb = makeGlb({ parts: [{ name: 'Base plate', triangles: 12 }] });
       await writeFile(storage.absolute(request.outputPath), glb);
       return {

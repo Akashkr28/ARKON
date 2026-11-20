@@ -1,9 +1,11 @@
-# Integration hooks (not built in Phase 1)
+# Integration hooks
 
 Every feature below plugs into `src/actions/viewerActions.js` rather than the scene or gesture code.
 
-- **Depth occlusion (Depth Anything)** — `src/scene/Scene.jsx`, `TODO(depth)`. Render a depth mask
-  between the video and the model so hands can pass in front of it.
+- **Hand occlusion** — `src/scene/Scene.jsx`, `TODO(depth)`. Planned approach: depth-only
+  (`colorWrite: false`) capsules along each finger bone, the palm and the forearm, placed at the
+  hand's estimated depth, so the hologram is hidden behind your hand. Much cheaper than running a
+  depth-estimation model such as Depth Anything.
 - **Backend upload + STEP → GLB** — done in Phase 2: `actions/libraryActions.js` (upload, poll,
   retry, delete) and `models/catalog.js` (samples + ready uploads). `loadModel(id)` takes either id.
 - **AI assistant** — `onAction` in `viewerActions.js`, `TODO(ai)`. Each exported action is a tool:

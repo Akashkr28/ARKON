@@ -27,6 +27,7 @@ beforeAll(async () => {
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
       const key = req.url === '/health' ? '/health' : JSON.parse(body).input_path;
+      if (key === 'slow.step') return; // never answer
       const [status, payload] = responses[key];
       res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(payload));
     });
@@ -35,7 +36,10 @@ beforeAll(async () => {
   baseUrl = `http://127.0.0.1:${server.address().port}`;
 });
 
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => {
+  server.closeAllConnections(); // the "slow" request is still open
+  return new Promise((resolve) => server.close(resolve));
+});
 
 describe('converter client', () => {
   it('reports health', async () => {
@@ -72,9 +76,19 @@ describe('converter client', () => {
     await expect(attempt).rejects.toMatchObject({ status: 500, userFacing: false });
   });
 
-  it('explains an unreachable converter', async () => {
+  it('marks an unreachable converter as retryable', async () => {
     const attempt = createConverterClient('http://127.0.0.1:9').convert({ inputPath: 'a', outputPath: 'b' });
     await expect(attempt).rejects.toBeInstanceOf(ConverterError);
+    await expect(attempt).rejects.toMatchObject({ retryable: true, userFacing: false });
     await expect(attempt).rejects.toThrow(/not reachable/);
+  });
+
+  it('turns a timeout into advice for the user', async () => {
+    const attempt = createConverterClient(baseUrl, { timeoutMs: 1 }).convert({
+      inputPath: 'slow.step',
+      outputPath: 'x.glb',
+    });
+    await expect(attempt).rejects.toMatchObject({ userFacing: true, retryable: false });
+    await expect(attempt).rejects.toThrow(/took longer than .* DRAFT quality/);
   });
 });

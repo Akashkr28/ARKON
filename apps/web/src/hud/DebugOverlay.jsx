@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { GestureRecognizer } from '@mediapipe/tasks-vision';
 import { useViewerStore } from '../store/viewerStore';
 import { useHandStore } from '../store/handStore';
-import { GESTURE } from '../config';
+import { GESTURE, QUALITY_PRESETS } from '../config';
+import { preset, quality } from '../quality';
 
 const CONNECTIONS = GestureRecognizer.HAND_CONNECTIONS;
 const HAND_COLORS = { Left: '#ff4fd8', Right: '#2ee6ff' };
@@ -52,6 +53,7 @@ function drawHand(ctx, hand) {
 
 function drawStats(ctx, tracker, renderFps) {
   const lines = [
+    `QUALITY   ${QUALITY_PRESETS[quality.level].label}${quality.auto ? ' (auto)' : ''} · detect ≤${preset.maxDetectHz} Hz`,
     `TRACKER   ${tracker.status.toUpperCase()}${tracker.delegate ? ` (${tracker.delegate})` : ''}`,
     `VIDEO     ${tracker.videoSize[0]}×${tracker.videoSize[1]}`,
     `TRACK FPS ${tracker.trackFps.toFixed(1)}`,

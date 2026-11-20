@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { VIDEO } from '../config';
+import { preset } from '../quality';
 import { setCameras } from '../actions/viewerActions';
 import { useViewerStore } from '../store/viewerStore';
 
@@ -61,8 +61,8 @@ export function useWebcam(videoRef, deviceId) {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: {
-            width: { ideal: VIDEO.idealWidth },
-            height: { ideal: VIDEO.idealHeight },
+            width: { ideal: preset.camera.width },
+            height: { ideal: preset.camera.height },
             ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'user' }),
           },
         });
