@@ -3,6 +3,7 @@ import { useViewerStore } from './store/viewerStore';
 import { useWebcam } from './video/useWebcam';
 import { bindKeyboard } from './input/keyboard';
 import { bindMouse } from './input/mouse';
+import { refreshLibrary } from './actions/libraryActions';
 import Scene from './scene/Scene';
 import Hud from './hud/Hud';
 import ErrorScreen from './hud/ErrorScreen';
@@ -27,6 +28,9 @@ export default function App() {
 
   useEffect(() => bindKeyboard(), []);
   useEffect(() => bindMouse(), []);
+  useEffect(() => {
+    refreshLibrary();
+  }, []);
 
   return (
     <div className="app">

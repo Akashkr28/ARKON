@@ -1,5 +1,6 @@
 import { useViewerStore, initialTransform } from '../store/viewerStore';
-import { VIEW, MODELS } from '../config';
+import { VIEW } from '../config';
+import { findModelEntry } from '../models/catalog';
 
 // The single place that changes viewer state. Gestures, keyboard, and (later) the AI
 // assistant and collaborators all call these functions with plain, serializable args.
@@ -135,8 +136,9 @@ export function hidePartInfo() {
 
 // --- Model loading ---------------------------------------------------------
 
+// modelId is a bundled sample id or an uploaded model's id (which must be ready).
 export function loadModel(modelId) {
-  if (!MODELS.some((m) => m.id === modelId)) return;
+  if (!findModelEntry(modelId)) return false;
   set({
     ...NO_SELECTION,
     modelId,
@@ -149,6 +151,7 @@ export function loadModel(modelId) {
     explodeTarget: 0,
   });
   emit('loadModel', { modelId });
+  return true;
 }
 
 export function modelLoaded(partList) {

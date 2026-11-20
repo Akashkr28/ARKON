@@ -2,11 +2,19 @@
 
 const base = import.meta.env.BASE_URL;
 
-// To add your own model: drop a .glb into public/models/ and add an entry here.
+// Bundled sample models, available even when the API is offline. Your own models
+// are uploaded through the LIBRARY panel (or dropped onto the window) instead.
 export const MODELS = [
   { id: 'engine', label: '2-Cylinder Engine', url: `${base}models/2CylinderEngine.glb` },
   { id: 'gearbox', label: 'Gearbox Assembly', url: `${base}models/GearboxAssy.glb` },
 ];
+
+export const LIBRARY = {
+  // While any model is queued or converting, its status is re-checked this often.
+  pollMs: 1000,
+  acceptedExtensions: ['.step', '.stp', '.glb'],
+  defaultQuality: 'standard',
+};
 
 export const VIDEO = {
   idealWidth: 1280,

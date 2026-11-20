@@ -11,16 +11,24 @@ Requires Node 22.9+, PostgreSQL, [uv](https://docs.astral.sh/uv/) (Python), and 
 
 ```bash
 npm install
-npm run setup:converter                  # Python venv with OpenCASCADE (OCP) + FastAPI
-createdb holocad && createdb holocad_test
-cp apps/api/.env.example apps/api/.env   # then put your Postgres user/password in it
-npm run db:migrate
-npm run dev                              # web :5173, API :3001, converter :8001
+npm run setup:converter   # Python venv with OpenCASCADE (OCP) + FastAPI
+npm run db:start          # project-local Postgres: .pgdata/, port 5433, no password; writes apps/api/.env
+npm run dev               # web :5173, API :3001, converter :8001
 ```
+
+`npm run db:start` uses the PostgreSQL programs already installed (it finds `pg_ctl` on your PATH,
+in `/Library/PostgreSQL`, Homebrew or Postgres.app) but runs its own server, so your system
+database and its password are never involved. Run it again after a reboot; `npm run db:stop`
+stops it. To use another Postgres instead, write `apps/api/.env` yourself from
+`apps/api/.env.example` and run `npm run db:migrate`.
 
 The repo is an npm workspace: `apps/web` (the viewer), `apps/api` (Express + Postgres), plus
 `services/converter` (Python, STEP → GLB with OpenCASCADE). `npm test` runs the API and
 converter tests; database tests are skipped unless `DATABASE_URL_TEST` is set.
+
+**Your own models:** use **+ UPLOAD** in the LIBRARY panel, or drop a `.step`, `.stp` or `.glb`
+file anywhere on the window. STEP files are converted in the background (pick DRAFT / STANDARD /
+FINE mesh detail first) and open automatically when ready.
 
 A sample STEP assembly lives in `services/converter/samples/mini-gearbox.step`; regenerate it
 with `cd services/converter && uv run python -m holocad_converter.sample samples/mini-gearbox.step`.
@@ -67,17 +75,19 @@ status bar is the current gesture state; press **D** to see skeletons, poses and
 
 ## Adding your own model
 
-1. Export or convert to `.glb` (binary glTF). Each mesh becomes an explodable, pickable part, so
-   keep parts as separate meshes.
-2. Copy it into `public/models/`.
-3. Add an entry to `MODELS` in `src/config.js`:
-   ```js
-   { id: 'my-part', label: 'My Part', url: `${base}models/MyPart.glb` },
-   ```
-4. Pick it from the MODEL menu. It's centred and scaled automatically.
+Upload it from the LIBRARY panel or drop it on the window (see Setup). STEP (`.step`, `.stp`) is
+converted to GLB with part names, colours and assembly structure kept; `.glb` is used as is. Each
+mesh becomes an explodable, pickable part, so keep parts as separate bodies in your CAD export.
 
-Part names come from the mesh (or its parent node) names in the file. The sample models and their
-attribution are listed in `public/models/ATTRIBUTION.md`.
+To ship a model with the app instead (available even without the API), copy the `.glb` into
+`apps/web/public/models/` and add it to `MODELS` in `apps/web/src/config.js`:
+
+```js
+{ id: 'my-part', label: 'My Part', url: `${base}models/MyPart.glb` },
+```
+
+Models are centred and scaled automatically. The bundled samples and their attribution are listed
+in `apps/web/public/models/ATTRIBUTION.md`.
 
 ## Tuning
 

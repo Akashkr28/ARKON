@@ -5,8 +5,9 @@ import HandCards from './HandCards';
 import RadialMenu from './RadialMenu';
 import PartInfoCard from './PartInfoCard';
 import GestureLegend from './GestureLegend';
+import LibraryPanel from './LibraryPanel';
+import DropOverlay from './DropOverlay';
 import * as actions from '../actions/viewerActions';
-import { MODELS } from '../config';
 import './hud.css';
 
 function ToggleButton({ label, hotkey, active, onClick }) {
@@ -30,7 +31,6 @@ function ControlPanel() {
       dim: state.dim,
       cameras: state.cameras,
       activeCameraId: state.activeCameraId,
-      modelId: state.modelId,
     })),
   );
 
@@ -75,17 +75,6 @@ function ControlPanel() {
           ))}
         </select>
       </label>
-
-      <label className="hud-field">
-        <span>MODEL</span>
-        <select value={s.modelId} onChange={(e) => actions.loadModel(e.target.value)}>
-          {MODELS.map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.label}
-            </option>
-          ))}
-        </select>
-      </label>
     </div>
   );
 }
@@ -126,8 +115,12 @@ export default function Hud() {
       <RadialMenu />
       <StatusLine />
       <PartInfoCard />
-      <ControlPanel />
+      <div className="hud-right">
+        <ControlPanel />
+        <LibraryPanel />
+      </div>
       <GestureLegend />
+      <DropOverlay />
     </div>
   );
 }

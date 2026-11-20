@@ -10,11 +10,15 @@ if (import.meta.env.DEV) {
     import('./actions/viewerActions'),
     import('./vision/handPipeline'),
     import('./scene/picking'),
-  ]).then(([viewer, hands, actions, pipeline, picking]) => {
+    import('./store/libraryStore'),
+    import('./actions/libraryActions'),
+  ]).then(([viewer, hands, actions, pipeline, picking, libraryStore, library]) => {
     window.holocad = {
       viewerStore: viewer.useViewerStore,
       handStore: hands.useHandStore,
+      libraryStore: libraryStore.useLibraryStore,
       actions,
+      library,
       processResult: pipeline.processResult,
       pickPartAt: picking.pickPartAt,
     };

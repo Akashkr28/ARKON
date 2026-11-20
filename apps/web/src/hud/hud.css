@@ -25,14 +25,245 @@
   padding: 8px 12px;
 }
 
-.hud-controls {
+/* Right column: view controls on top, model library below; scrolls if the window is short. */
+.hud-right {
+  position: absolute;
   top: 16px;
   right: 16px;
-  width: 210px;
+  width: 240px;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px; /* room for the corner brackets */
+  pointer-events: auto;
+}
+
+.hud-right .hud-panel {
+  position: relative;
+}
+
+.hud-controls {
   padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.hud-library {
+  padding: 10px;
+}
+
+.library-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.library-api.api-online {
+  color: #7dffb0;
+}
+
+.library-api.api-offline {
+  color: #ff8090;
+}
+
+.library-upload {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.library-upload .hud-toggle {
+  flex: 1;
+  justify-content: center;
+}
+
+.library-upload select {
+  font: inherit;
+  font-size: 10px;
+  color: var(--cyan);
+  background: rgba(2, 16, 24, 0.8);
+  border: 1px solid rgba(46, 230, 255, 0.3);
+  border-radius: 3px;
+}
+
+.hud-toggle:disabled,
+.library-upload select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.library-offline {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #ffb3bd;
+  margin-bottom: 8px;
+}
+
+.library-offline code {
+  color: #fff;
+}
+
+.library-offline button,
+.library-error button {
+  margin-left: 6px;
+  font: inherit;
+  font-size: 10px;
+  color: var(--cyan);
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.library-section {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  opacity: 0.5;
+  margin: 10px 0 4px;
+}
+
+.library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.library-row {
+  position: relative;
+  border: 1px solid rgba(46, 230, 255, 0.2);
+  border-radius: 3px;
+}
+
+.library-row.is-active {
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px rgba(46, 230, 255, 0.35);
+}
+
+.library-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  padding: 6px 30px 6px 8px;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.library-open:disabled {
+  cursor: default;
+}
+
+.library-name {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.library-meta {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.library-badge {
+  margin-right: 6px;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.status-ready .library-badge {
+  color: #7dffb0;
+}
+
+.status-failed .library-badge,
+.library-error {
+  color: #ff8090;
+}
+
+.library-badge.is-busy {
+  color: #ffe14f;
+  animation: library-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes library-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.library-error {
+  display: block;
+  padding: 0 8px 6px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.upload-row .library-error {
+  padding: 0;
+}
+
+.library-progress {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: rgba(46, 230, 255, 0.15);
+}
+
+.library-progress span {
+  display: block;
+  height: 100%;
+  background: var(--cyan);
+  transition: width 120ms linear;
+}
+
+.library-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font: inherit;
+  font-size: 10px;
+  color: rgba(46, 230, 255, 0.6);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.library-delete:hover,
+.library-delete.is-armed {
+  color: #ff8090;
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 16, 24, 0.55);
+  pointer-events: none;
+}
+
+.drop-overlay-box {
+  padding: 28px 40px;
+  font-size: 16px;
+  letter-spacing: 0.2em;
+  border: 2px dashed var(--cyan);
+  border-radius: 6px;
+  box-shadow: 0 0 30px rgba(46, 230, 255, 0.3);
 }
 
 .hud-toggle {
@@ -340,8 +571,12 @@ kbd {
 }
 
 @media (max-width: 700px) {
-  .hud-controls {
-    width: 150px;
+  .hud-right {
+    width: 170px;
+  }
+
+  .hud-controls,
+  .hud-library {
     padding: 8px;
     gap: 4px;
   }

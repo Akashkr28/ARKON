@@ -7,6 +7,7 @@ dist
 # Local config and data
 .env
 storage/
+.pgdata/
 
 # Python
 .venv/

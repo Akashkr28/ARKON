@@ -4,8 +4,8 @@ Every feature below plugs into `src/actions/viewerActions.js` rather than the sc
 
 - **Depth occlusion (Depth Anything)** — `src/scene/Scene.jsx`, `TODO(depth)`. Render a depth mask
   between the video and the model so hands can pass in front of it.
-- **Backend upload + STEP → GLB** — `src/config.js` `MODELS` is a static list today. Replace it with a
-  fetch from the Express API; `loadModel(id)` stays the same.
+- **Backend upload + STEP → GLB** — done in Phase 2: `actions/libraryActions.js` (upload, poll,
+  retry, delete) and `models/catalog.js` (samples + ready uploads). `loadModel(id)` takes either id.
 - **AI assistant** — `onAction` in `viewerActions.js`, `TODO(ai)`. Each exported action is a tool:
   `explode({ factor })`, `assemble()`, `selectPart({ partId })`, `scaleTo({ scale })`, … Part IDs
   and names come from `useViewerStore.getState().parts`.
