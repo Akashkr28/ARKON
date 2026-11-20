@@ -1,4 +1,15 @@
 node_modules
 dist
+.vite
 .DS_Store
 .claude
+
+# Local config and data
+.env
+storage/
+.pgdata/
+
+# Python
+.venv/
+__pycache__/
+*.pyc

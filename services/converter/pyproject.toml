@@ -1,0 +1,28 @@
+[project]
+name = "holocad-converter"
+version = "0.2.0"
+description = "STEP to GLB conversion service for HoloCAD"
+requires-python = ">=3.11"
+dependencies = [
+  "cadquery-ocp>=8.0.1",
+  "fastapi>=0.115",
+  "uvicorn>=0.32",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "httpx>=0.28",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+  # Starlette suggests a different HTTP client for TestClient; httpx still works and
+  # we haven't vetted the suggested replacement package.
+  "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
