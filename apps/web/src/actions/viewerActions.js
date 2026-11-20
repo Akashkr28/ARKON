@@ -3,6 +3,7 @@ import { VIEW } from '../config';
 import { findModelEntry } from '../models/catalog';
 import { VIEW_PRESETS, fitScale, nearestAngle } from '../scene/viewPresets';
 import { LENGTH_UNITS } from '../units';
+import { redo as redoHistory, undo as undoHistory } from './history';
 
 // The single place that changes viewer state. Gestures, keyboard, and (later) the AI
 // assistant and collaborators all call these functions with plain, serializable args.
@@ -22,6 +23,20 @@ export function onAction(listener) {
 
 function emit(name, args = {}) {
   for (const listener of listeners) listener(name, args);
+}
+
+// --- Undo / redo ---------------------------------------------------------------
+
+export function undo() {
+  const label = undoHistory();
+  if (label) emit('undo', { label });
+  return label;
+}
+
+export function redo() {
+  const label = redoHistory();
+  if (label) emit('redo', { label });
+  return label;
 }
 
 // --- Model transform -------------------------------------------------------
@@ -100,7 +115,14 @@ export function spawnAt(x, y, z = 0) {
   emit('spawnAt', { x, y, z });
 }
 
-const NO_SELECTION = { selectedPartId: null, infoPartId: null, partPull: [0, 0, 0] };
+// Selection: `selectedPartIds` in the order they were picked; `selectedPartId` is the
+// most recent one (the "primary": the part a pinch pulls and the info card shows).
+// Only these actions write them, so the two always agree.
+const NO_SELECTION = { selectedPartIds: [], selectedPartId: null, infoPartId: null, partPull: [0, 0, 0] };
+
+function selectionOf(ids) {
+  return { selectedPartIds: ids, selectedPartId: ids.at(-1) ?? null, partPull: [0, 0, 0] };
+}
 
 export function resetModel() {
   set({
@@ -141,11 +163,32 @@ export function toggleExplode() {
   }
 }
 
+// Select just this part (replacing the selection).
 export function selectPart(partId) {
   if (partId === null) return clearSelection();
   if (!get().parts[partId]) return;
-  set({ ...NO_SELECTION, selectedPartId: partId });
+  set({ ...NO_SELECTION, ...selectionOf([partId]) });
   emit('selectPart', { partId });
+}
+
+// Shift/Ctrl-click: add the part, or remove it if it's already selected.
+export function toggleInSelection(partId) {
+  if (!get().parts[partId]) return;
+  const current = get().selectedPartIds;
+  const ids = current.includes(partId) ? current.filter((id) => id !== partId) : [...current, partId];
+  const infoPartId = get().infoPartId && ids.length ? ids.at(-1) : null;
+  set({ ...selectionOf(ids), infoPartId });
+  emit('toggleInSelection', { partId });
+}
+
+export function selectParts(partIds) {
+  const ids = [...new Set(partIds)].filter((id) => get().parts[id]);
+  set({ ...NO_SELECTION, ...selectionOf(ids) });
+  emit('selectParts', { partIds: ids });
+}
+
+export function selectAll() {
+  selectParts(Object.keys(get().parts));
 }
 
 export function clearSelection() {

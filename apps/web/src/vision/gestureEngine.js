@@ -5,6 +5,7 @@ import { pickPartAt } from '../scene/picking';
 import { POSE, PoseDebouncer, classifyPose } from './handPose';
 import { createClapDetector } from './clapDetector';
 import { screenToNdc } from './projection';
+import { setInteractionActive } from '../actions/history';
 
 // Turns per-frame hands into viewer actions. One explicit state at a time; each
 // state decides when it ends. Never touches three.js — only calls viewerActions
@@ -412,6 +413,8 @@ export function createGestureEngine() {
   function transition(next) {
     state = next.name;
     data = STATES[state].enter(...next.args);
+    // A whole gesture (grab → move → release) becomes one undo step.
+    setInteractionActive('gesture', state !== STATE.IDLE);
   }
 
   function handleClap(hands, nowMs) {
@@ -444,6 +447,7 @@ export function createGestureEngine() {
       clap.reset();
       state = STATE.IDLE;
       data = idle.enter();
+      setInteractionActive('gesture', false);
     },
   };
 }

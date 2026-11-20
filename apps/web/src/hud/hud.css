@@ -246,11 +246,10 @@
   color: #ff8090;
 }
 
-/* Vertical view toolbar on the left edge. */
+/* Vertical view toolbar, bottom-left (clear of the part card at the top-left). */
 .view-toolbar {
   left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 96px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -277,6 +276,22 @@
 .view-button:hover {
   color: #021018;
   background: var(--cyan);
+}
+
+.view-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: transparent;
+  color: rgba(46, 230, 255, 0.75);
+}
+
+.view-undo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid rgba(46, 230, 255, 0.2);
 }
 
 .view-button.view-fit {
@@ -629,9 +644,30 @@ kbd {
 }
 
 .part-info-hint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   margin-top: 8px;
   font-size: 10px;
-  opacity: 0.5;
+  opacity: 0.6;
+}
+
+.part-info-clear {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 1px 6px;
+  cursor: pointer;
+}
+
+.part-info-list {
+  margin-top: 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  opacity: 0.8;
 }
 
 .debug-overlay {

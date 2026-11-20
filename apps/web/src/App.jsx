@@ -4,6 +4,7 @@ import { useWebcam } from './video/useWebcam';
 import { bindKeyboard } from './input/keyboard';
 import { bindPointer } from './input/pointer';
 import { refreshLibrary } from './actions/libraryActions';
+import { startHistory } from './actions/history';
 import Scene from './scene/Scene';
 import Hud from './hud/Hud';
 import ErrorScreen from './hud/ErrorScreen';
@@ -28,6 +29,7 @@ export default function App() {
 
   useEffect(() => bindKeyboard(), []);
   useEffect(() => bindPointer(), []);
+  useEffect(() => startHistory(), []);
   useEffect(() => {
     refreshLibrary();
   }, []);

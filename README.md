@@ -89,8 +89,9 @@ and their attribution are listed in `apps/web/public/models/ATTRIBUTION.md`.
 | Left drag / one finger | Rotate (horizontal turns around the vertical axis, vertical tilts) |
 | Right or middle drag, Shift + left drag | Pan |
 | Wheel / trackpad scroll / pinch | Zoom toward the cursor (between the fingers) |
-| Click a part (while exploded) | Select it and show its info card |
-| Double-click | Move the model to the cursor |
+| Click a part | Select it and show its info card (click empty space to clear) |
+| Shift / Ctrl / Cmd + click | Add a part to the selection, or remove it |
+| Double-click | Fit the model to the screen |
 
 The left toolbar has **FIT** and the standard views (FRONT, RIGHT, TOP, ISO, BACK, LEFT, BOTTOM),
 plus the length unit (mm, cm, m, in). Sizes are real: the status line shows the model's overall
@@ -99,6 +100,11 @@ uploaded GLBs are assumed to be in metres, as the glTF standard requires.
 
 The camera never moves (hand tracking depends on it); navigation moves, turns and scales the
 model, through the same `viewerActions` as gestures.
+
+**Undo** covers how the model is arranged: position, rotation, zoom, views and explode. A whole
+drag, wheel zoom or hand gesture is one step, however long it takes. Selection and display
+toggles (mirror, labels, materials…) aren't undoable, as in most CAD tools. The UNDO / REDO
+buttons on the toolbar say what they'll undo; history resets when you open another model.
 
 A gesture has to be held for 4 tracked frames (~0.13 s) before it counts. The yellow word in the
 status bar is the current gesture state; press **D** to see skeletons, poses and timings.
@@ -115,7 +121,10 @@ status bar is the current gesture state; press **D** to see skeletons, poses and
 | F | Mirror video |
 | B | Black & white video |
 | C | Next camera |
-| Esc | Deselect part |
+| Esc | Clear the selection |
+| Ctrl/Cmd + A | Select all parts |
+| Ctrl/Cmd + Z | Undo (moves, turns, zooms, views, explode/assemble) |
+| Ctrl/Cmd + Shift + Z, Ctrl + Y | Redo |
 | 0 | Fit to screen |
 | 1 / 3 / 7 / 5 | Front / right / top / iso view (Blender numpad layout) |
 

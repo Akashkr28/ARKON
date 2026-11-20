@@ -18,14 +18,31 @@ const SHORTCUTS = {
   5: () => actions.setView('iso'),
 };
 
+// Ctrl (Windows/Linux) or Cmd (Mac) combinations.
+function commandShortcut(event) {
+  const key = event.key.toLowerCase();
+  if (key === 'z' && event.shiftKey) return actions.redo;
+  if (key === 'z') return actions.undo;
+  if (key === 'y') return actions.redo;
+  if (key === 'a') return actions.selectAll;
+  return null;
+}
+
 function isTyping(target) {
   const tag = target?.tagName;
   return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || target?.isContentEditable;
 }
 
 function handleKeyDown(event) {
-  if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
   if (isTyping(event.target)) return;
+  if (event.ctrlKey || event.metaKey) {
+    const action = event.altKey ? null : commandShortcut(event);
+    if (!action) return;
+    event.preventDefault(); // e.g. Cmd+A would otherwise select the page text
+    action();
+    return;
+  }
+  if (event.repeat || event.altKey) return;
   const action = SHORTCUTS[event.key.toLowerCase()];
   if (!action) return;
   event.preventDefault();

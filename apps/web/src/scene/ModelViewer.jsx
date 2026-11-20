@@ -65,7 +65,7 @@ function LoadedModel({ scene }) {
   const hologramMaterial = useMemo(() => createHologramMaterial(), []);
   const selectedMaterial = useMemo(() => createHologramMaterial(HOLOGRAM.selectedColor), []);
   const materialMode = useViewerStore((s) => s.materialMode);
-  const selectedPartId = useViewerStore((s) => s.selectedPartId);
+  const selectedPartIds = useViewerStore((s) => s.selectedPartIds);
   const camera = useThree((s) => s.camera);
 
   const groupRef = useRef();
@@ -79,11 +79,12 @@ function LoadedModel({ scene }) {
   useEffect(() => registerPicker(createPicker(root, camera)), [root, camera]);
 
   useEffect(() => {
+    const selected = new Set(selectedPartIds);
     for (const part of parts) {
       const base = materialMode === 'hologram' ? hologramMaterial : part.originalMaterial;
-      part.mesh.material = part.id === selectedPartId ? selectedMaterial : base;
+      part.mesh.material = selected.has(part.id) ? selectedMaterial : base;
     }
-  }, [parts, materialMode, selectedPartId, hologramMaterial, selectedMaterial]);
+  }, [parts, materialMode, selectedPartIds, hologramMaterial, selectedMaterial]);
 
   useEffect(
     () => () => {

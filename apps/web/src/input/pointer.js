@@ -3,6 +3,7 @@ import { useViewerStore } from '../store/viewerStore';
 import { pickPartAt } from '../scene/picking';
 import { screenToNdc, screenToPlane } from '../vision/projection';
 import { NAVIGATION, VIEW } from '../config';
+import { setInteractionActive } from '../actions/history';
 
 // Mouse, trackpad and touch navigation. Everything goes through viewerActions, so it
 // mixes freely with gestures (and, later, the AI assistant and other users).
@@ -11,8 +12,9 @@ import { NAVIGATION, VIEW } from '../config';
 //   right or middle drag,         pan
 //   shift + left drag
 //   wheel / pinch                 zoom toward the cursor / between the fingers
-//   click (while exploded)        select the part under the cursor
-//   double-click                  move the model to the cursor
+//   click                         select the part under the cursor (empty space clears)
+//   shift / ctrl / cmd + click    add or remove a part from the selection
+//   double-click                  fit the model to the screen
 
 const HUD_SELECTOR = '.hud-panel, .hud-errors, .part-info, button, select, input, label';
 
@@ -53,6 +55,7 @@ function onPointerDown(event) {
   pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
   if (pointers.size === 2) {
     gesture = { mode: 'pinch', dragged: true, ...pinchInfo() };
+    setInteractionActive('pointer', true);
   } else if (pointers.size === 1) {
     gesture = { mode: dragMode(event), startX: event.clientX, startY: event.clientY, dragged: false };
   }
@@ -81,6 +84,7 @@ function onPointerMove(event) {
     if (moved < NAVIGATION.dragThresholdPx) return;
     gesture.dragged = true;
     actions.stopSpin();
+    setInteractionActive('pointer', true);
     document.body.classList.add('is-navigating');
   }
 
@@ -98,6 +102,7 @@ function onPointerUp(event) {
   if (gesture?.dragged) suppressNextClick = true; // a drag isn't a click
   if (pointers.size === 0) {
     gesture = null;
+    setInteractionActive('pointer', false);
     document.body.classList.remove('is-navigating');
   } else if (gesture?.mode === 'pinch') {
     // One finger lifted: carry on rotating with the other.
@@ -121,21 +126,23 @@ function onClick(event) {
     suppressNextClick = false;
     return;
   }
-  if (isOverHud(event.target) || !actions.isExploded()) return;
+  if (isOverHud(event.target)) return;
   const ndc = screenToNdc({ x: event.clientX, y: event.clientY }, window.innerWidth, window.innerHeight, {});
   const partId = pickPartAt(ndc.x, ndc.y);
-  if (partId) {
+  const additive = event.shiftKey || event.ctrlKey || event.metaKey;
+  if (partId && additive) {
+    actions.toggleInSelection(partId);
+  } else if (partId) {
     actions.selectPart(partId);
     actions.showPartInfo(partId);
-  } else {
+  } else if (!additive) {
     actions.clearSelection();
   }
 }
 
 function onDoubleClick(event) {
   if (isOverHud(event.target)) return;
-  const point = screenToModelPlane(event.clientX, event.clientY);
-  actions.spawnAt(point.x, point.y, point.z);
+  actions.fitToView();
 }
 
 function onContextMenu(event) {
