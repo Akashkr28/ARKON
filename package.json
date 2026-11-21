@@ -16,9 +16,11 @@
     "db:migrate": "npm run db:migrate -w @holocad/api",
     "db:start": "node scripts/local-db.mjs start",
     "db:stop": "node scripts/local-db.mjs stop",
-    "db:status": "node scripts/local-db.mjs status"
+    "db:status": "node scripts/local-db.mjs status",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "concurrently": "^9.2.1"
   },
   "engines": {

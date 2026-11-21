@@ -55,6 +55,7 @@ function TreeRow({ node, depth, expanded, onToggle, state }) {
       onDoubleClick={() => actions.isolateParts(node.partIds)}
       title={`${node.name} — click to select, double-click to isolate`}
       role="treeitem"
+      aria-label={node.name}
       aria-selected={isSelected}
       aria-expanded={isGroup ? expanded : undefined}
     >

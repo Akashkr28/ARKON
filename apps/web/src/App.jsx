@@ -13,6 +13,8 @@ import { useHandTracking } from './vision/useHandTracking';
 import { useHandStore } from './store/handStore';
 import './App.css';
 
+const TRACKING_OFF = new URLSearchParams(window.location.search).get('tracking') === 'off';
+
 export default function App() {
   const videoRef = useRef(null);
   const requestedCameraId = useViewerStore((s) => s.requestedCameraId);
@@ -24,7 +26,8 @@ export default function App() {
 
   const camera = useWebcam(videoRef, requestedCameraId);
   // Keep tracking alive while switching cameras; the loop idles until frames arrive.
-  useHandTracking(videoRef, camera.status !== 'error');
+  // ?tracking=off skips hand tracking (no model download), e.g. for mouse-only use or tests.
+  useHandTracking(videoRef, camera.status !== 'error' && !TRACKING_OFF);
   const trackerError = useHandStore((s) => s.error);
 
   useEffect(() => bindKeyboard(), []);

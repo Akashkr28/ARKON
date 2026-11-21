@@ -8,6 +8,9 @@ names, colours and structure.
 - **Phase 1:** gesture-controlled viewer (`apps/web`).
 - **Phase 2:** CAD library: Express API + PostgreSQL (`apps/api`) and a Python STEP → GLB
   converter (`services/converter`).
+- **Phase 3:** engineering tools: real units, mouse/touch navigation and standard views,
+  multi-selection, undo/redo, assembly tree with hide / isolate / X-ray, measurement with
+  snapping, section planes. All controls on one page: [docs/CONTROLS.md](docs/CONTROLS.md).
 - **Next:** AI assistant that drives the same viewer actions (Phase 3), multi-user review
   sessions (Phase 4).
 
@@ -41,6 +44,7 @@ stops it. To use another Postgres instead, write `apps/api/.env` yourself from
 |---|---|
 | `npm run dev` | Web, API and converter together (any one can also run alone; see `package.json`) |
 | `npm test` | Web unit tests, API tests (database tests need `DATABASE_URL_TEST`, which `db:start` sets), converter tests |
+| `npm run test:e2e` | End-to-end tests in a real (headless) Chrome; see Testing |
 | `npm run build` | Static build of the viewer into `apps/web/dist/` |
 | `npm run db:start` / `db:stop` / `db:status` | Project-local Postgres |
 | `npm run db:migrate` | Apply SQL migrations to `DATABASE_URL` |
@@ -266,7 +270,24 @@ bloom halos intact. Original-materials mode switches to normal alpha compositing
 | `createdb` / `psql` ask for a password | Not needed: use `npm run db:start` instead |
 | Gestures fire by accident | Raise `GESTURE.debounceFrames` or the relevant threshold |
 
+## Testing
+
+- `npm test`: unit and integration tests. Web (vitest: actions, undo, units, views,
+  measurement, sections, assembly tree), API (vitest + supertest against the test database),
+  converter (pytest against real OpenCASCADE conversions).
+- `npm run test:e2e`: Playwright drives the real app in Chrome: default model and its tree,
+  selection + isolate + undo, search, views, a real two-click measurement on snapped corners,
+  section planes, and a full STEP upload → conversion → open → delete. It starts its own web
+  (:5273), API (:3201) and converter (:8201) on the **test** database and a temporary storage
+  folder, so a running `npm run dev` and your library are never touched. Needs
+  `npm run db:start` (for `DATABASE_URL_TEST`) and, once, `npx playwright install chromium`.
+  `npm run test:e2e -- --ui` lets you watch it.
+
+The test browser has a fake camera and `?tracking=off`, so hand gestures themselves aren't
+covered end-to-end; the gesture engine is tested with synthetic hand data instead.
+
 ## Not yet built
 
-Hand occlusion (hands passing in front of the model), AI assistant (Phase 3), multi-user review
-(Phase 4), authentication. Each has a `TODO(...)` hook; see `apps/web/src/integrations/README.md`.
+Hand occlusion (hands passing in front of the model), section caps (filled cut faces), saving
+views/measurements, accounts and hosting (Phase 4), assembling and parametric design (Phase 5),
+review / training / configurator modules (Phase 6), AI assistant and WebXR (Phase 7). Each has a `TODO(...)` hook; see `apps/web/src/integrations/README.md`.
