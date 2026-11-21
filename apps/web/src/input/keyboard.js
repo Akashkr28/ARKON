@@ -1,4 +1,5 @@
 import * as actions from '../actions/viewerActions';
+import { cancelMeasuring, cycleMeasureTool } from '../actions/measureActions';
 
 const SHORTCUTS = {
   e: actions.toggleExplode,
@@ -9,7 +10,10 @@ const SHORTCUTS = {
   d: actions.toggleDebug,
   r: actions.resetModel,
   m: actions.toggleMaterialMode,
-  escape: actions.clearSelection,
+  // Esc backs out one level: half-finished measurement, measure tool, then selection.
+  escape: () => cancelMeasuring() || actions.clearSelection(),
+  q: cycleMeasureTool, // off → distance → angle
+  '.': actions.fitToSelection, // like Blender's numpad period
   // Visibility of the selection: hide, isolate, show all ("unhide"), x-ray.
   h: () => actions.hideParts(),
   i: () => actions.isolateParts(),

@@ -17,6 +17,7 @@ describe('formatLength', () => {
     expect(formatLength(0.0125, 'cm')).toBe('1.25 cm');
     expect(formatLength(0.0254, 'in')).toBe('1.00 in');
     expect(formatLength(null)).toBe('—');
+    expect(formatLength(0.13289, 'mm', { precise: true })).toBe('132.9 mm'); // measurements
   });
 
   it('formats a bounding box', () => {

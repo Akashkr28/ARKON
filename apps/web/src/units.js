@@ -8,12 +8,13 @@ export const LENGTH_UNITS = {
   in: { label: 'in', perMetre: 39.3700787, decimals: 2 },
 };
 
-export function formatLength(metres, unit = 'mm') {
+// `precise`: always keep the unit's decimals (measurements); otherwise big numbers are
+// rounded (1780 mm, not 1780.0 mm, for overall sizes).
+export function formatLength(metres, unit = 'mm', { precise = false } = {}) {
   if (metres === null || metres === undefined || Number.isNaN(metres)) return '—';
   const { label, perMetre, decimals } = LENGTH_UNITS[unit] ?? LENGTH_UNITS.mm;
   const value = metres * perMetre;
-  // Drop needless decimals on big numbers: 1780 mm, not 1780.0 mm.
-  const shown = Math.abs(value) >= 100 ? Math.round(value).toString() : value.toFixed(decimals);
+  const shown = !precise && Math.abs(value) >= 100 ? Math.round(value).toString() : value.toFixed(decimals);
   return `${shown} ${label}`;
 }
 

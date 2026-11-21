@@ -9,6 +9,7 @@ import LibraryPanel from './LibraryPanel';
 import DropOverlay from './DropOverlay';
 import QualityHint from './QualityHint';
 import ViewToolbar from './ViewToolbar';
+import MeasurePanel from './MeasurePanel';
 import AssemblyTree from './AssemblyTree';
 import { setHudTab, useUiStore } from '../store/uiStore';
 import { formatSize } from '../units';
@@ -175,6 +176,7 @@ export default function Hud() {
         <RightPanel />
       </div>
       <ViewToolbar />
+      <MeasurePanel />
       <GestureLegend />
       <QualityHint />
       <DropOverlay />

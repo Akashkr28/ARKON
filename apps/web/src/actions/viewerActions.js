@@ -1,7 +1,8 @@
 import { useViewerStore, initialTransform } from '../store/viewerStore';
 import { VIEW } from '../config';
 import { findModelEntry } from '../models/catalog';
-import { VIEW_PRESETS, fitScale, nearestAngle } from '../scene/viewPresets';
+import { VIEW_PRESETS, fitScale, nearestAngle, rotateXYZ } from '../scene/viewPresets';
+import { partsBounds as sceneBounds } from '../scene/sceneQueries';
 import { LENGTH_UNITS } from '../units';
 import { nameNextStep, redo as redoHistory, undo as undoHistory } from './history';
 
@@ -102,9 +103,36 @@ export function setView(name) {
 // Centre the model and size it to fit the screen (accounting for any explode),
 // keeping its current orientation.
 export function fitToView() {
+  // With parts hidden, frame what's actually on screen.
+  if (get().hiddenPartIds.length) {
+    const visible = Object.keys(get().parts).filter((id) => !get().hiddenPartIds.includes(id));
+    if (fitToParts(visible, 'Fit')) return;
+  }
   nameNextStep('Fit');
   set({ position: [0, 0, 0], scale: fitScale(get().explodeTarget), spinVelocity: [0, 0] });
   emit('fitToView');
+}
+
+// Zoom so these parts fill the screen, centred. Keeps the current orientation.
+// Returns false if none of them is visible.
+export function fitToParts(partIds, label = 'Fit to selection') {
+  const bounds = sceneBounds(partIds);
+  if (!bounds || bounds.radius <= 0) return false;
+  const { rotation, position } = get();
+  // A radius of 1 scene unit at scale 1 is "the whole model fits" (see prepareModel).
+  const scale = clamp(VIEW.modelRadius / bounds.radius, VIEW.minScale, VIEW.maxScale);
+  const offset = rotateXYZ(bounds.center, rotation).map((v) => v * scale);
+  nameNextStep(label);
+  set({ scale, position: [-offset[0], -offset[1], position[2]], spinVelocity: [0, 0] });
+  emit('fitToParts', { partIds });
+  return true;
+}
+
+// "." (like Blender's numpad period): frame the selection, or everything visible.
+export function fitToSelection() {
+  const ids = get().selectedPartIds;
+  if (ids.length && fitToParts(ids)) return;
+  fitToView();
 }
 
 export function setLengthUnit(unit) {

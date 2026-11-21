@@ -94,6 +94,15 @@ export const VIEW = {
   pickRadiusNdc: 0.025,
 };
 
+// Measuring: snap radius in screen pixels, and what counts as a real edge.
+export const MEASURE = {
+  snapVertexPx: 10,
+  snapEdgePx: 7,
+  // Faces meeting at more than this angle form an edge you can snap to; smaller
+  // creases are just the tessellation of a curved surface.
+  featureEdgeAngleDeg: 25,
+};
+
 // Mouse, trackpad and touch navigation.
 export const NAVIGATION = {
   rotatePerPixel: 0.008, // radians of model rotation per pixel dragged

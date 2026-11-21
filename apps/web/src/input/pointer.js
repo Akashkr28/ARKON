@@ -4,6 +4,8 @@ import { pickPartAt } from '../scene/picking';
 import { screenToNdc, screenToPlane } from '../vision/projection';
 import { NAVIGATION, VIEW } from '../config';
 import { setInteractionActive } from '../actions/history';
+import { addMeasurePoint, setMeasureHover, useMeasureStore } from '../actions/measureActions';
+import { snapAt } from '../scene/sceneQueries';
 
 // Mouse, trackpad and touch navigation. Everything goes through viewerActions, so it
 // mixes freely with gestures (and, later, the AI assistant and other users).
@@ -14,7 +16,8 @@ import { setInteractionActive } from '../actions/history';
 //   wheel / pinch                 zoom toward the cursor / between the fingers
 //   click                         select the part under the cursor (empty space clears)
 //   shift / ctrl / cmd + click    add or remove a part from the selection
-//   double-click                  fit the model to the screen
+//   double-click                  frame the part under the cursor (empty space: everything)
+//   with a measure tool on        click places measurement points (snapping to corners/edges)
 
 const HUD_SELECTOR = '.hud-panel, .hud-errors, .part-info, button, select, input, label';
 
@@ -61,8 +64,21 @@ function onPointerDown(event) {
   }
 }
 
+const measuring = () => useMeasureStore.getState().tool !== 'off';
+
+// Hover snapping runs at most once per frame, whatever the mouse event rate.
+let hoverFrame = 0;
+function updateMeasureHover(x, y) {
+  if (hoverFrame) return;
+  hoverFrame = requestAnimationFrame(() => {
+    hoverFrame = 0;
+    setMeasureHover(snapAt(x, y));
+  });
+}
+
 function onPointerMove(event) {
   const previous = pointers.get(event.pointerId);
+  if (!previous && measuring() && !isOverHud(event.target)) updateMeasureHover(event.clientX, event.clientY);
   if (!previous || !gesture) return;
   const dx = event.clientX - previous.x;
   const dy = event.clientY - previous.y;
@@ -127,6 +143,10 @@ function onClick(event) {
     return;
   }
   if (isOverHud(event.target)) return;
+  if (measuring()) {
+    addMeasurePoint(snapAt(event.clientX, event.clientY));
+    return;
+  }
   const ndc = screenToNdc({ x: event.clientX, y: event.clientY }, window.innerWidth, window.innerHeight, {});
   const partId = pickPartAt(ndc.x, ndc.y);
   const additive = event.shiftKey || event.ctrlKey || event.metaKey;
@@ -141,8 +161,11 @@ function onClick(event) {
 }
 
 function onDoubleClick(event) {
-  if (isOverHud(event.target)) return;
-  actions.fitToView();
+  // Measuring quickly would otherwise double-click; don't jump the view mid-measure.
+  if (isOverHud(event.target) || measuring()) return;
+  const ndc = screenToNdc({ x: event.clientX, y: event.clientY }, window.innerWidth, window.innerHeight, {});
+  const partId = pickPartAt(ndc.x, ndc.y);
+  if (!partId || !actions.fitToParts([partId], 'Fit to part')) actions.fitToView();
 }
 
 function onContextMenu(event) {
@@ -161,7 +184,13 @@ export function bindPointer() {
   ];
   for (const [type, handler] of listeners) window.addEventListener(type, handler);
   window.addEventListener('wheel', onWheel, { passive: false });
+  // Crosshair cursor while a measure tool is on.
+  const unsubscribeTool = useMeasureStore.subscribe((state) => {
+    document.body.classList.toggle('is-measuring', state.tool !== 'off');
+  });
   return () => {
+    unsubscribeTool();
+    cancelAnimationFrame(hoverFrame);
     for (const [type, handler] of listeners) window.removeEventListener(type, handler);
     window.removeEventListener('wheel', onWheel);
     pointers.clear();

@@ -32,6 +32,10 @@ body.is-navigating * {
   cursor: grabbing !important;
 }
 
+body.is-measuring .app {
+  cursor: crosshair;
+}
+
 .webcam,
 .dim-overlay,
 .scene {

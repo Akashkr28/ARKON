@@ -8,6 +8,8 @@ import { HOLOGRAM, VIEW } from '../config';
 import { prepareModel } from './prepareModel';
 import { createHologramMaterial } from './hologramMaterial';
 import { createPicker, registerPicker } from './picking';
+import { registerSceneQueries } from './sceneQueries';
+import { createSceneQueries } from './snapping';
 import { useModelFile } from './useModelFile';
 
 // Scratch objects reused every frame.
@@ -75,6 +77,7 @@ function LoadedModel({ scene }) {
   const hiddenPartIds = useViewerStore((s) => s.hiddenPartIds);
   const xrayPartIds = useViewerStore((s) => s.xrayPartIds);
   const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
 
   const groupRef = useRef();
   const explodeRef = useRef(0);
@@ -85,6 +88,14 @@ function LoadedModel({ scene }) {
   }, [parts, metresPerSceneUnit, modelSize]);
 
   useEffect(() => registerPicker(createPicker(root, camera)), [root, camera]);
+
+  useEffect(() => {
+    const meshById = new Map(parts.map((p) => [p.id, p.mesh]));
+    const content = root.children[0];
+    return registerSceneQueries(
+      createSceneQueries({ root, content, group: groupRef.current, camera, size, meshById }),
+    );
+  }, [root, parts, camera, size]);
 
   useEffect(() => {
     const selected = new Set(selectedPartIds);

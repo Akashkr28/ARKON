@@ -12,7 +12,9 @@ if (import.meta.env.DEV) {
     import('./scene/picking'),
     import('./store/libraryStore'),
     import('./actions/libraryActions'),
-  ]).then(([viewer, hands, actions, pipeline, picking, libraryStore, library]) => {
+    import('./scene/sceneQueries'),
+    import('./actions/measureActions'),
+  ]).then(([viewer, hands, actions, pipeline, picking, libraryStore, library, sceneQueries, measure]) => {
     window.holocad = {
       viewerStore: viewer.useViewerStore,
       handStore: hands.useHandStore,
@@ -21,6 +23,8 @@ if (import.meta.env.DEV) {
       library,
       processResult: pipeline.processResult,
       pickPartAt: picking.pickPartAt,
+      snapAt: sceneQueries.snapAt,
+      measure,
     };
   });
 }

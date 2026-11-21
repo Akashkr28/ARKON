@@ -19,6 +19,25 @@ export function nearestAngle(current, target) {
   return target + TURN * Math.round((current - target) / TURN);
 }
 
+// Rotate a vector by Euler angles in three.js's default 'XYZ' order (matrix
+// Rx·Ry·Rz, so Z is applied first), without needing three.js here.
+export function rotateXYZ([x, y, z], [ax, ay, az]) {
+  const [sx, cx, sy, cy, sz, cz] = [Math.sin(ax), Math.cos(ax), Math.sin(ay), Math.cos(ay), Math.sin(az), Math.cos(az)];
+  // Rz
+  let x1 = x * cz - y * sz;
+  let y1 = x * sz + y * cz;
+  let z1 = z;
+  // Ry
+  const x2 = x1 * cy + z1 * sy;
+  const z2 = -x1 * sy + z1 * cy;
+  x1 = x2;
+  z1 = z2;
+  // Rx
+  const y3 = y1 * cx - z1 * sx;
+  const z3 = y1 * sx + z1 * cx;
+  return [x1, y3, z3];
+}
+
 // Scale that keeps the whole model on screen. Exploding pushes parts up to
 // (1 + factor) model radii from the centre.
 export function fitScale(explodeFactor) {

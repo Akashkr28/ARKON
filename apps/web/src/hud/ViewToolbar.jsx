@@ -1,5 +1,5 @@
 import { useViewerStore } from '../store/viewerStore';
-import { fitToView, redo, setLengthUnit, setView, undo } from '../actions/viewerActions';
+import { fitToSelection, fitToView, redo, setLengthUnit, setView, undo } from '../actions/viewerActions';
 import { useHistoryStore } from '../actions/history';
 import { VIEW_PRESETS } from '../scene/viewPresets';
 import { LENGTH_UNITS } from '../units';
@@ -51,6 +51,14 @@ export default function ViewToolbar() {
       <UndoRedo />
       <button type="button" className="view-button view-fit" onClick={fitToView} title="Fit the model to the screen (0)">
         FIT <kbd>0</kbd>
+      </button>
+      <button
+        type="button"
+        className="view-button"
+        onClick={fitToSelection}
+        title="Frame the selected parts (.), or everything visible if nothing is selected"
+      >
+        FIT SEL <kbd>.</kbd>
       </button>
       {VIEWS.map(([name, key]) => (
         <button

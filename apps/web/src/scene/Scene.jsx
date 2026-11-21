@@ -8,6 +8,7 @@ import { useLibraryStore } from '../store/libraryStore';
 import { findModelEntry } from '../models/catalog';
 import ModelViewer from './ModelViewer';
 import HandRings from './HandRings';
+import Measurements from './Measurements';
 import Effects from './Effects';
 
 class ModelErrorBoundary extends Component {
@@ -73,6 +74,7 @@ export default function Scene() {
           <ModelViewer url={model.url} />
         </ModelErrorBoundary>
       )}
+      <Measurements />
       <HandRings />
       <Effects />
     </Canvas>

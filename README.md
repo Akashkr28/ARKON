@@ -91,7 +91,7 @@ and their attribution are listed in `apps/web/public/models/ATTRIBUTION.md`.
 | Wheel / trackpad scroll / pinch | Zoom toward the cursor (between the fingers) |
 | Click a part | Select it and show its info card (click empty space to clear) |
 | Shift / Ctrl / Cmd + click | Add a part to the selection, or remove it |
-| Double-click | Fit the model to the screen |
+| Double-click | Frame the part under the cursor (empty space: the whole model) |
 
 The left toolbar has **FIT** and the standard views (FRONT, RIGHT, TOP, ISO, BACK, LEFT, BOTTOM),
 plus the length unit (mm, cm, m, in). Sizes are real: the status line shows the model's overall
@@ -106,6 +106,15 @@ the CAD file (e.g. Head › Helmet, Left arm › Gauntlet), with search. Click a
 part or the whole sub-assembly (Shift/Ctrl/Cmd adds), the ● eye to hide or show it, double-click
 to isolate it. The part card at the top-left shows the selection's name, where it sits in the
 assembly, its real size, and HIDE / ISOLATE / X-RAY buttons.
+
+**Measuring** (↔ DIST / ∠ ANGLE beside the view toolbar, or Q): click points on the model; the
+cursor snaps to corners (◆), then to edges (▬), else to any point on a surface. Edges are real
+feature edges (faces meeting at more than 25°), not the triangles of the mesh. Distances show
+in the chosen unit with ΔX / ΔY / ΔZ; angles use three clicks with the corner in the middle.
+Values are fixed when taken; a measurement taken on an exploded model is marked EXPLODED, since
+distances between moved-apart parts aren't real assembly distances. Measurements clear when you
+open another model. **FIT SEL** / "." frames the selection; FIT frames only what's visible when
+parts are hidden.
 
 **Undo** covers how the model is arranged: position, rotation, zoom, views, explode, hidden and
 X-rayed parts. A whole
@@ -128,10 +137,12 @@ status bar is the current gesture state; press **D** to see skeletons, poses and
 | F | Mirror video |
 | B | Black & white video |
 | C | Next camera |
-| Esc | Clear the selection |
+| Esc | Back out: cancel a half-finished measurement, then the measure tool, then the selection |
 | Ctrl/Cmd + A | Select all parts |
 | H / I / U | Hide the selection / isolate it (hide everything else) / show all |
 | X | X-ray the selection (see-through) |
+| Q | Measure: off → distance → angle → off |
+| . | Frame the selection (or everything visible) |
 | Ctrl/Cmd + Z | Undo (moves, turns, zooms, views, explode/assemble) |
 | Ctrl/Cmd + Shift + Z, Ctrl + Y | Redo |
 | 0 | Fit to screen |
