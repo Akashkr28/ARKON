@@ -3,6 +3,7 @@ import { VIEW } from '../config';
 import { findModelEntry } from '../models/catalog';
 import { VIEW_PRESETS, fitScale, nearestAngle, rotateXYZ } from '../scene/viewPresets';
 import { partsBounds as sceneBounds } from '../scene/sceneQueries';
+import { NO_SECTION, SECTION_AXES } from '../scene/sectionPlane';
 import { LENGTH_UNITS } from '../units';
 import { nameNextStep, redo as redoHistory, undo as undoHistory } from './history';
 
@@ -249,6 +250,40 @@ export function hidePartInfo() {
   set({ infoPartId: null });
 }
 
+// --- Section (cutaway) -----------------------------------------------------------
+// A plane through the model along one of its axes; everything beyond it is cut away
+// so you can see inside. Part of undo history.
+
+function updateSection(changes, label) {
+  nameNextStep(label);
+  set({ section: { ...get().section, ...changes } });
+  emit('section', { ...get().section });
+}
+
+export function setSectionAxis(axis) {
+  if (axis !== null && !SECTION_AXES.includes(axis)) return;
+  updateSection({ axis }, axis ? `Section ${axis.toUpperCase()}` : 'Section off');
+}
+
+// S cycles: off → X → Y → Z → off.
+export function cycleSection() {
+  const order = [null, ...SECTION_AXES];
+  setSectionAxis(order[(order.indexOf(get().section.axis) + 1) % order.length]);
+}
+
+// 0 = one end of the model along the axis, 1 = the other end.
+export function setSectionOffset(offset) {
+  updateSection({ offset: clamp(offset, 0, 1) }, 'Move section');
+}
+
+export function flipSection() {
+  updateSection({ flip: !get().section.flip }, 'Flip section');
+}
+
+export function toggleSectionPlane() {
+  set({ showSectionPlane: !get().showSectionPlane });
+}
+
 // --- Visibility ------------------------------------------------------------------
 // Hidden parts disappear and can't be picked; X-ray parts are drawn see-through.
 // Both lists are part of undo history. Ids default to the current selection.
@@ -317,6 +352,7 @@ export function loadModel(modelId) {
     ...NO_SELECTION,
     hiddenPartIds: [],
     xrayPartIds: [],
+    section: NO_SECTION,
     modelId,
     // Bumped on every load so the scene remounts even when the id is unchanged
     // (retry after an error, reload after a re-upload).
@@ -341,6 +377,7 @@ export function modelLoaded(partList, units = {}) {
     parts,
     metresPerSceneUnit: units.metresPerSceneUnit ?? 1,
     modelSize: units.modelSize ?? null,
+    modelBounds: units.modelBounds ?? null,
   });
 }
 

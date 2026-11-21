@@ -116,8 +116,15 @@ distances between moved-apart parts aren't real assembly distances. Measurements
 open another model. **FIT SEL** / "." frames the selection; FIT frames only what's visible when
 parts are hidden.
 
+**Section planes** (SECTION row in the bottom-left tools, or S): cut the model along its own X
+(left–right), Y (top–bottom) or Z (front–back) axis to see inside. The slider moves the cut and
+shows its position in real units; FLIP keeps the other side; ▭ shows or hides the plane outline.
+The cut turns, moves and explodes with the model. Cut-away geometry can't be clicked, picked or
+snapped to. With original materials, inner walls are shown so cut solids don't look hollow;
+cut faces are not filled in (no "capping") yet.
+
 **Undo** covers how the model is arranged: position, rotation, zoom, views, explode, hidden and
-X-rayed parts. A whole
+X-rayed parts, and the section plane. A whole
 drag, wheel zoom or hand gesture is one step, however long it takes. Selection and display
 toggles (mirror, labels, materials…) aren't undoable, as in most CAD tools. The UNDO / REDO
 buttons on the toolbar say what they'll undo; history resets when you open another model.
@@ -142,6 +149,7 @@ status bar is the current gesture state; press **D** to see skeletons, poses and
 | H / I / U | Hide the selection / isolate it (hide everything else) / show all |
 | X | X-ray the selection (see-through) |
 | Q | Measure: off → distance → angle → off |
+| S | Section: off → X → Y → Z → off |
 | . | Frame the selection (or everything visible) |
 | Ctrl/Cmd + Z | Undo (moves, turns, zooms, views, explode/assemble) |
 | Ctrl/Cmd + Shift + Z, Ctrl + Y | Redo |

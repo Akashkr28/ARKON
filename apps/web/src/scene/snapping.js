@@ -1,5 +1,6 @@
 import { Box3, EdgesGeometry, Raycaster, Sphere, Vector2, Vector3 } from 'three';
 import { MEASURE } from '../config';
+import { isPickable } from './picking';
 
 // Measurement snapping, CAD-style: corners first, then edges, then any point on a
 // surface. "Edges" are feature edges (where faces meet at a real angle), not the
@@ -55,7 +56,7 @@ export function createSceneQueries({ root, content, group, camera, size, meshByI
     raycaster.setFromCamera(pointerNdc, camera);
     hits.length = 0;
     raycaster.intersectObject(root, true, hits);
-    return hits.find((h) => h.object.visible && h.object.userData.partId) ?? null;
+    return hits.find(isPickable) ?? null;
   }
 
   function snapAt(screenX, screenY) {
@@ -67,7 +68,10 @@ export function createSceneQueries({ root, content, group, camera, size, meshByI
     // Candidates behind the surface under the cursor are hidden from view; ignore
     // them (with some slack, since a corner sits right on the surface's border).
     const slack = hit.distance * 0.02;
-    const reachable = (point) => point.distanceTo(camera.position) <= hit.distance + slack;
+    const planes = mesh.material.clippingPlanes ?? [];
+    const reachable = (point) =>
+      point.distanceTo(camera.position) <= hit.distance + slack &&
+      !planes.some((plane) => plane.distanceToPoint(point) < -1e-6); // not cut away
 
     const edges = featureEdges(mesh.geometry);
     let kind = 'face';

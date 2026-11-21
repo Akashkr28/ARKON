@@ -13,7 +13,7 @@ const SETTLE_MS = 400;
 const MAX_STEPS = 100;
 
 // Fields that make up "the arrangement".
-const TRACKED = ['position', 'rotation', 'scale', 'explodeTarget', 'hiddenPartIds', 'xrayPartIds'];
+const TRACKED = ['position', 'rotation', 'scale', 'explodeTarget', 'hiddenPartIds', 'xrayPartIds', 'section'];
 
 export const useHistoryStore = create(() => ({ undoLabel: null, redoLabel: null }));
 
@@ -61,6 +61,11 @@ function sameItem(a, b) {
 
 function sameValue(a, b) {
   if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => sameItem(v, b[i]));
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    // Plain settings objects (the section): equal if every field is.
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    return [...keys].every((key) => sameItem(a[key], b[key]));
+  }
   return sameItem(a, b);
 }
 
@@ -75,6 +80,7 @@ function describe(before, after, keys) {
     return diff > 0 ? `Hide ${diff} part${diff === 1 ? '' : 's'}` : 'Show parts';
   }
   if (keys.includes('xrayPartIds')) return 'X-ray';
+  if (keys.includes('section')) return 'Section';
   if (keys.includes('explodeTarget')) return after.explodeTarget > before.explodeTarget ? 'Explode' : 'Assemble';
   if (keys.length === 1 && keys[0] === 'rotation') return 'Rotate';
   if (keys.length === 1 && keys[0] === 'position') return 'Move';

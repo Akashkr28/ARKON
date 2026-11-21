@@ -1,21 +1,26 @@
 import { AdditiveBlending, Color, DoubleSide, ShaderMaterial } from 'three';
 import { HOLOGRAM } from '../config';
 
+// The #include lines are three.js's own clipping chunks, so section planes cut this
+// material like the built-in ones (they need the view-space position named mvPosition).
 const vertexShader = /* glsl */ `
+  #include <clipping_planes_pars_vertex>
   varying vec3 vNormal;
   varying vec3 vViewDir;
   varying float vWorldY;
 
   void main() {
-    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     vNormal = normalize(normalMatrix * normal);
-    vViewDir = normalize(-viewPosition.xyz);
+    vViewDir = normalize(-mvPosition.xyz);
     vWorldY = (modelMatrix * vec4(position, 1.0)).y;
-    gl_Position = projectionMatrix * viewPosition;
+    gl_Position = projectionMatrix * mvPosition;
+    #include <clipping_planes_vertex>
   }
 `;
 
 const fragmentShader = /* glsl */ `
+  #include <clipping_planes_pars_fragment>
   uniform vec3 uColor;
   uniform float uTime;
   uniform float uBaseOpacity;
@@ -27,6 +32,7 @@ const fragmentShader = /* glsl */ `
   varying float vWorldY;
 
   void main() {
+    #include <clipping_planes_fragment>
     // Fresnel: surfaces seen edge-on glow, surfaces facing the camera stay faint.
     float facing = abs(dot(normalize(vNormal), normalize(vViewDir)));
     float fresnel = pow(1.0 - facing, uFresnelPower) * uFresnelStrength;
@@ -60,5 +66,6 @@ export function createHologramMaterial(color = HOLOGRAM.color) {
     depthWrite: false,
     blending: AdditiveBlending,
     side: DoubleSide,
+    clipping: true,
   });
 }

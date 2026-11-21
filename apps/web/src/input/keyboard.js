@@ -13,6 +13,7 @@ const SHORTCUTS = {
   // Esc backs out one level: half-finished measurement, measure tool, then selection.
   escape: () => cancelMeasuring() || actions.clearSelection(),
   q: cycleMeasureTool, // off → distance → angle
+  s: actions.cycleSection, // off → X → Y → Z
   '.': actions.fitToSelection, // like Blender's numpad period
   // Visibility of the selection: hide, isolate, show all ("unhide"), x-ray.
   h: () => actions.hideParts(),

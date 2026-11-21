@@ -23,6 +23,9 @@ export const useViewerStore = create(() => ({
   // Real-world units: the model is shown normalised, these map back to metres.
   metresPerSceneUnit: 1,
   modelSize: null, // [x, y, z] metres, whole model
+  modelBounds: null, // { min, max } metres, in the model's own axes
+  section: { axis: null, offset: 0.5, flip: false }, // cutaway plane (undoable)
+  showSectionPlane: true, // draw the plane's outline (display only)
   lengthUnit: 'mm', // display unit: 'mm' | 'cm' | 'm' | 'in'
   hiddenPartIds: [], // hidden from view and from picking (undoable)
   xrayPartIds: [], // drawn see-through so you can look past them (undoable)

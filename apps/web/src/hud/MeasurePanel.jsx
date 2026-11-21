@@ -1,6 +1,7 @@
 import { useMeasureStore, clearMeasurements, deleteMeasurement, setMeasureTool } from '../actions/measureActions';
 import { useViewerStore } from '../store/viewerStore';
 import { formatLength } from '../units';
+import SectionControls from './SectionControls';
 
 const HINTS = {
   distance: ['Click the first point', 'Click the second point'],
@@ -34,6 +35,7 @@ export default function MeasurePanel() {
 
   return (
     <div className="hud-panel measure-panel">
+      <SectionControls />
       <div className="measure-tools">
         <button
           type="button"

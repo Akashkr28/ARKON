@@ -58,6 +58,10 @@ export default function Scene() {
       className="scene"
       style={{ mixBlendMode: hologram ? 'screen' : 'normal' }}
       gl={{ alpha: true, antialias: preset.antialias, powerPreference: 'high-performance' }}
+      // Per-material clipping, used by section planes (overlays stay uncut).
+      onCreated={({ gl }) => {
+        gl.localClippingEnabled = true;
+      }}
       dpr={[1, preset.maxPixelRatio]}
       camera={{ fov: VIEW.cameraFov, position: [0, 0, VIEW.cameraZ], near: 0.1, far: 100 }}
     >

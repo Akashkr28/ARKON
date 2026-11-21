@@ -466,6 +466,50 @@
   gap: 6px;
 }
 
+.section-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(46, 230, 255, 0.2);
+}
+
+.section-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.section-label {
+  flex: 1;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  opacity: 0.7;
+}
+
+.section-row .view-button {
+  min-width: 0;
+  padding: 3px 7px;
+}
+
+.view-button.section-axis.is-active,
+.view-button.is-on {
+  color: #021018;
+  background: #ffb347;
+  border-color: #ffb347;
+}
+
+.section-controls input[type='range'] {
+  width: 100%;
+  accent-color: #ffb347;
+}
+
+.section-position {
+  flex: 1;
+  font-size: 10px;
+  color: #ffb347;
+}
+
 .measure-tools {
   display: flex;
   gap: 4px;

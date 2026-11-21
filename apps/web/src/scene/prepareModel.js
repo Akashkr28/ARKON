@@ -96,6 +96,8 @@ export function prepareModel(gltfScene) {
   // lengths (metres, per the glTF spec) for dimensions and measurements.
   const metresPerSceneUnit = 1 / unitScale;
   const modelSize = bounds.getSize(new Vector3()).toArray();
+  // In the model's own space (metres), for placing section planes.
+  const modelBounds = { min: bounds.min.toArray(), max: bounds.max.toArray() };
 
-  return { root, parts, metresPerSceneUnit, modelSize };
+  return { root, parts, metresPerSceneUnit, modelSize, modelBounds };
 }
