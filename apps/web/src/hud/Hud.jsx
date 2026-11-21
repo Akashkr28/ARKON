@@ -9,6 +9,8 @@ import LibraryPanel from './LibraryPanel';
 import DropOverlay from './DropOverlay';
 import QualityHint from './QualityHint';
 import ViewToolbar from './ViewToolbar';
+import AssemblyTree from './AssemblyTree';
+import { setHudTab, useUiStore } from '../store/uiStore';
 import { formatSize } from '../units';
 import * as actions from '../actions/viewerActions';
 import { changeQuality, quality } from '../quality';
@@ -41,7 +43,6 @@ function ControlPanel() {
 
   return (
     <div className="hud-panel hud-controls">
-      <div className="hud-panel-title">HOLOCAD // VIEW</div>
       <ToggleButton label="MIRROR" hotkey="F" active={s.mirror} onClick={actions.toggleMirror} />
       <ToggleButton label="B&W" hotkey="B" active={s.grayscale} onClick={actions.toggleGrayscale} />
       <ToggleButton label="LABELS" hotkey="L" active={s.labels} onClick={actions.toggleLabels} />
@@ -131,6 +132,38 @@ function StatusLine() {
   );
 }
 
+const TABS = [
+  ['parts', 'PARTS'],
+  ['library', 'LIBRARY'],
+  ['display', 'DISPLAY'],
+];
+
+// Tabs keep the right side to one panel at a time instead of a growing stack.
+function RightPanel() {
+  const tab = useUiStore((s) => s.hudTab);
+  return (
+    <>
+      <div className="hud-panel hud-tabs" role="tablist">
+        {TABS.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            className={`hud-tab${tab === id ? ' is-active' : ''}`}
+            onClick={() => setHudTab(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'parts' && <AssemblyTree />}
+      {tab === 'library' && <LibraryPanel />}
+      {tab === 'display' && <ControlPanel />}
+    </>
+  );
+}
+
 export default function Hud() {
   return (
     <div className="hud">
@@ -139,8 +172,7 @@ export default function Hud() {
       <StatusLine />
       <PartInfoCard />
       <div className="hud-right">
-        <ControlPanel />
-        <LibraryPanel />
+        <RightPanel />
       </div>
       <ViewToolbar />
       <GestureLegend />

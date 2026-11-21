@@ -44,6 +44,151 @@
   position: relative;
 }
 
+.hud-tabs {
+  display: flex;
+  padding: 3px;
+  gap: 3px;
+}
+
+.hud-tab {
+  flex: 1;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(46, 230, 255, 0.6);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.hud-tab.is-active {
+  color: #021018;
+  background: var(--cyan);
+}
+
+/* Assembly tree */
+.hud-tree {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tree-toolbar input {
+  width: 100%;
+  font: inherit;
+  font-size: 11px;
+  color: var(--cyan);
+  background: rgba(2, 16, 24, 0.8);
+  border: 1px solid rgba(46, 230, 255, 0.3);
+  border-radius: 3px;
+  padding: 5px 7px;
+}
+
+.tree-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.tree-status button {
+  font: inherit;
+  font-size: 10px;
+  color: var(--cyan);
+  background: none;
+  border: 1px solid rgba(46, 230, 255, 0.4);
+  border-radius: 2px;
+  padding: 1px 5px;
+  cursor: pointer;
+}
+
+.tree-status button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.tree-list {
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+  margin: 0 -4px;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  border-radius: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tree-row:hover {
+  background: rgba(46, 230, 255, 0.08);
+}
+
+.tree-row.is-selected {
+  color: #ffd23f;
+  background: rgba(255, 210, 63, 0.12);
+}
+
+.tree-row.is-hidden .tree-name {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+.tree-caret,
+.tree-eye {
+  flex: none;
+  width: 14px;
+  font: inherit;
+  font-size: 10px;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tree-eye.is-off,
+.tree-eye.is-mixed {
+  opacity: 0.6;
+}
+
+.tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-name.is-group {
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+.tree-count,
+.tree-tag {
+  margin-left: auto;
+  font-size: 9px;
+  opacity: 0.55;
+}
+
+.tree-tag {
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 0 3px;
+}
+
+.tree-empty {
+  padding: 8px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
 .hud-controls {
   padding: 10px;
   display: flex;
@@ -663,6 +808,35 @@ kbd {
   cursor: pointer;
 }
 
+.part-info-path {
+  margin: -4px 0 8px;
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.part-info-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.part-info-actions button {
+  flex: 1;
+  font: inherit;
+  font-size: 10px;
+  color: inherit;
+  background: none;
+  border: 1px solid rgba(255, 210, 63, 0.5);
+  border-radius: 2px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.part-info-actions button:hover {
+  color: #021018;
+  background: #ffd23f;
+}
+
 .part-info-list {
   margin-top: 6px;
   font-size: 10px;
@@ -688,6 +862,11 @@ kbd {
   .hud-library {
     padding: 8px;
     gap: 4px;
+  }
+
+  .hud-tab {
+    font-size: 9px;
+    letter-spacing: 0.04em;
   }
 
   .hud-errors {

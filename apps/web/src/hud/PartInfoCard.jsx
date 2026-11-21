@@ -1,6 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useViewerStore } from '../store/viewerStore';
-import { clearSelection, hidePartInfo } from '../actions/viewerActions';
+import { clearSelection, hideParts, hidePartInfo, isolateParts, toggleXray } from '../actions/viewerActions';
 import { formatSize } from '../units';
 
 function SelectionSummary({ parts, unit }) {
@@ -48,6 +48,9 @@ export default function PartInfoCard() {
       ) : (
         <>
           <div className="part-info-name">{part.name}</div>
+          {part.path?.length > 0 && (
+            <div className="part-info-path">{part.path.map((step) => step.name).join(' › ')}</div>
+          )}
           <dl>
             <dt>VERTICES</dt>
             <dd>{part.vertexCount.toLocaleString()}</dd>
@@ -56,6 +59,17 @@ export default function PartInfoCard() {
           </dl>
         </>
       )}
+      <div className="part-info-actions">
+        <button type="button" onClick={() => hideParts()} title="Hide the selection (H)">
+          HIDE <kbd>H</kbd>
+        </button>
+        <button type="button" onClick={() => isolateParts()} title="Show only the selection (I)">
+          ISOLATE <kbd>I</kbd>
+        </button>
+        <button type="button" onClick={() => toggleXray()} title="See-through (X)">
+          X-RAY <kbd>X</kbd>
+        </button>
+      </div>
       <div className="part-info-hint">
         Shift+click to add or remove · Ctrl+A all · ESC clears
         <button type="button" className="part-info-clear" onClick={clearSelection}>

@@ -3,7 +3,7 @@ import { VIEW } from '../config';
 import { findModelEntry } from '../models/catalog';
 import { VIEW_PRESETS, fitScale, nearestAngle } from '../scene/viewPresets';
 import { LENGTH_UNITS } from '../units';
-import { redo as redoHistory, undo as undoHistory } from './history';
+import { nameNextStep, redo as redoHistory, undo as undoHistory } from './history';
 
 // The single place that changes viewer state. Gestures, keyboard, and (later) the AI
 // assistant and collaborators all call these functions with plain, serializable args.
@@ -93,6 +93,7 @@ export function setView(name) {
   if (!preset) return false;
   const [x, y] = get().rotation;
   const [targetX, targetY] = preset.rotation;
+  nameNextStep(`${preset.label[0]}${preset.label.slice(1).toLowerCase()} view`);
   set({ rotation: [nearestAngle(x, targetX), nearestAngle(y, targetY), 0], spinVelocity: [0, 0] });
   emit('setView', { name });
   return true;
@@ -101,6 +102,7 @@ export function setView(name) {
 // Centre the model and size it to fit the screen (accounting for any explode),
 // keeping its current orientation.
 export function fitToView() {
+  nameNextStep('Fit');
   set({ position: [0, 0, 0], scale: fitScale(get().explodeTarget), spinVelocity: [0, 0] });
   emit('fitToView');
 }
@@ -219,6 +221,65 @@ export function hidePartInfo() {
   set({ infoPartId: null });
 }
 
+// --- Visibility ------------------------------------------------------------------
+// Hidden parts disappear and can't be picked; X-ray parts are drawn see-through.
+// Both lists are part of undo history. Ids default to the current selection.
+
+const knownIds = (ids) => [...new Set(ids)].filter((id) => get().parts[id]);
+const sorted = (ids) => [...ids].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+export function hideParts(partIds = get().selectedPartIds) {
+  const ids = knownIds(partIds);
+  if (!ids.length) return;
+  const hidden = sorted(new Set([...get().hiddenPartIds, ...ids]));
+  // Hidden parts can't stay selected (you couldn't see what you're acting on).
+  const remaining = get().selectedPartIds.filter((id) => !ids.includes(id));
+  set({ hiddenPartIds: hidden, ...selectionOf(remaining), infoPartId: remaining.length ? get().infoPartId : null });
+  emit('hideParts', { partIds: ids });
+}
+
+export function showParts(partIds) {
+  const ids = new Set(knownIds(partIds));
+  set({ hiddenPartIds: get().hiddenPartIds.filter((id) => !ids.has(id)) });
+  emit('showParts', { partIds: [...ids] });
+}
+
+export function toggleHidden(partIds) {
+  const ids = knownIds(partIds);
+  // A group counts as hidden only if all of it is; toggling a mixed group shows it all.
+  const allHidden = ids.every((id) => get().hiddenPartIds.includes(id));
+  if (allHidden) showParts(ids);
+  else hideParts(ids);
+}
+
+// Show only these parts (default: the selection); everything else is hidden.
+export function isolateParts(partIds = get().selectedPartIds) {
+  const keep = new Set(knownIds(partIds));
+  if (!keep.size) return;
+  nameNextStep('Isolate');
+  set({ hiddenPartIds: sorted(Object.keys(get().parts).filter((id) => !keep.has(id))) });
+  emit('isolateParts', { partIds: [...keep] });
+}
+
+export function showAllParts() {
+  nameNextStep('Show all');
+  set({ hiddenPartIds: [] });
+  emit('showAllParts');
+}
+
+export function toggleXray(partIds = get().selectedPartIds) {
+  const ids = knownIds(partIds);
+  if (!ids.length) return;
+  const current = new Set(get().xrayPartIds);
+  const allXray = ids.every((id) => current.has(id));
+  for (const id of ids) {
+    if (allXray) current.delete(id);
+    else current.add(id);
+  }
+  set({ xrayPartIds: sorted(current) });
+  emit('toggleXray', { partIds: ids, on: !allXray });
+}
+
 // --- Model loading ---------------------------------------------------------
 
 // modelId is a bundled sample id or an uploaded model's id (which must be ready).
@@ -226,6 +287,8 @@ export function loadModel(modelId) {
   if (!findModelEntry(modelId)) return false;
   set({
     ...NO_SELECTION,
+    hiddenPartIds: [],
+    xrayPartIds: [],
     modelId,
     // Bumped on every load so the scene remounts even when the id is unchanged
     // (retry after an error, reload after a re-upload).

@@ -223,6 +223,9 @@ export const RINGS = {
 
 export const HOLOGRAM = {
   selectedColor: '#ffd23f',
+  // X-ray: dim hologram colour, or this opacity for original materials.
+  xrayColor: '#0b3f48',
+  xrayOpacity: 0.18,
   color: '#2ee6ff',
   baseOpacity: 0.06,
   fresnelPower: 2.2,

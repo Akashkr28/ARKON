@@ -24,6 +24,8 @@ export const useViewerStore = create(() => ({
   metresPerSceneUnit: 1,
   modelSize: null, // [x, y, z] metres, whole model
   lengthUnit: 'mm', // display unit: 'mm' | 'cm' | 'm' | 'in'
+  hiddenPartIds: [], // hidden from view and from picking (undoable)
+  xrayPartIds: [], // drawn see-through so you can look past them (undoable)
   selectedPartIds: [], // in pick order
   selectedPartId: null, // the most recently picked one (pull target, info card)
   partPull: [0, 0, 0], // world-space offset of the selected part, on top of the explode

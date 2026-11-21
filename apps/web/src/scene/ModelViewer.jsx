@@ -39,10 +39,13 @@ function positionPart(part, explodeFactor) {
 function PartLabels({ parts }) {
   const labels = useViewerStore((s) => s.labels);
   const exploded = useViewerStore((s) => s.explodeTarget > 0.05);
+  const hiddenPartIds = useViewerStore((s) => s.hiddenPartIds);
   if (!labels || !exploded) return null;
 
+  const hidden = new Set(hiddenPartIds);
+  const visible = parts.filter((part) => !hidden.has(part.id));
   // Portal each label into its mesh so it rides along with the explode offset.
-  return parts.slice(0, VIEW.maxLabels).map((part) => (
+  return visible.slice(0, VIEW.maxLabels).map((part) => (
     <Fragment key={part.id}>
       {createPortal(
         <Html center className="part-label" zIndexRange={[10, 0]}>
@@ -64,8 +67,13 @@ function LoadedModel({ scene }) {
   const partsById = useMemo(() => new Map(parts.map((p) => [p.id, p])), [parts]);
   const hologramMaterial = useMemo(() => createHologramMaterial(), []);
   const selectedMaterial = useMemo(() => createHologramMaterial(HOLOGRAM.selectedColor), []);
+  // Additive blending: a darker colour simply glows less, which reads as "see-through".
+  const xrayHologramMaterial = useMemo(() => createHologramMaterial(HOLOGRAM.xrayColor), []);
+  const xrayOriginals = useRef(new Map()); // part id -> translucent clone of its own material
   const materialMode = useViewerStore((s) => s.materialMode);
   const selectedPartIds = useViewerStore((s) => s.selectedPartIds);
+  const hiddenPartIds = useViewerStore((s) => s.hiddenPartIds);
+  const xrayPartIds = useViewerStore((s) => s.xrayPartIds);
   const camera = useThree((s) => s.camera);
 
   const groupRef = useRef();
@@ -80,18 +88,41 @@ function LoadedModel({ scene }) {
 
   useEffect(() => {
     const selected = new Set(selectedPartIds);
+    const hidden = new Set(hiddenPartIds);
+    const xray = new Set(xrayPartIds);
     for (const part of parts) {
-      const base = materialMode === 'hologram' ? hologramMaterial : part.originalMaterial;
-      part.mesh.material = selected.has(part.id) ? selectedMaterial : base;
+      // Hidden meshes are skipped by the renderer and by picking.
+      part.mesh.visible = !hidden.has(part.id);
+      part.mesh.material = selected.has(part.id)
+        ? selectedMaterial
+        : xray.has(part.id)
+          ? xrayMaterialFor(part)
+          : materialMode === 'hologram'
+            ? hologramMaterial
+            : part.originalMaterial;
     }
-  }, [parts, materialMode, selectedPartIds, hologramMaterial, selectedMaterial]);
+
+    function xrayMaterialFor(part) {
+      if (materialMode === 'hologram') return xrayHologramMaterial;
+      let clone = xrayOriginals.current.get(part.id);
+      if (!clone) {
+        clone = part.originalMaterial.clone();
+        Object.assign(clone, { transparent: true, opacity: HOLOGRAM.xrayOpacity, depthWrite: false });
+        xrayOriginals.current.set(part.id, clone);
+      }
+      return clone;
+    }
+  }, [parts, materialMode, selectedPartIds, hiddenPartIds, xrayPartIds, hologramMaterial, selectedMaterial, xrayHologramMaterial]);
 
   useEffect(
     () => () => {
       hologramMaterial.dispose();
       selectedMaterial.dispose();
+      xrayHologramMaterial.dispose();
+      for (const clone of xrayOriginals.current.values()) clone.dispose();
+      xrayOriginals.current.clear();
     },
-    [hologramMaterial, selectedMaterial],
+    [hologramMaterial, selectedMaterial, xrayHologramMaterial],
   );
 
   useFrame((state, dt) => {
@@ -131,6 +162,7 @@ function LoadedModel({ scene }) {
     const time = state.clock.elapsedTime;
     hologramMaterial.uniforms.uTime.value = time;
     selectedMaterial.uniforms.uTime.value = time;
+    xrayHologramMaterial.uniforms.uTime.value = time;
   });
 
   return (

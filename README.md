@@ -101,7 +101,14 @@ uploaded GLBs are assumed to be in metres, as the glTF standard requires.
 The camera never moves (hand tracking depends on it); navigation moves, turns and scales the
 model, through the same `viewerActions` as gestures.
 
-**Undo** covers how the model is arranged: position, rotation, zoom, views and explode. A whole
+**PARTS panel** (right side; tabs switch to LIBRARY and DISPLAY): the model's assembly tree from
+the CAD file (e.g. Head › Helmet, Left arm › Gauntlet), with search. Click a row to select the
+part or the whole sub-assembly (Shift/Ctrl/Cmd adds), the ● eye to hide or show it, double-click
+to isolate it. The part card at the top-left shows the selection's name, where it sits in the
+assembly, its real size, and HIDE / ISOLATE / X-RAY buttons.
+
+**Undo** covers how the model is arranged: position, rotation, zoom, views, explode, hidden and
+X-rayed parts. A whole
 drag, wheel zoom or hand gesture is one step, however long it takes. Selection and display
 toggles (mirror, labels, materials…) aren't undoable, as in most CAD tools. The UNDO / REDO
 buttons on the toolbar say what they'll undo; history resets when you open another model.
@@ -123,6 +130,8 @@ status bar is the current gesture state; press **D** to see skeletons, poses and
 | C | Next camera |
 | Esc | Clear the selection |
 | Ctrl/Cmd + A | Select all parts |
+| H / I / U | Hide the selection / isolate it (hide everything else) / show all |
+| X | X-ray the selection (see-through) |
 | Ctrl/Cmd + Z | Undo (moves, turns, zooms, views, explode/assemble) |
 | Ctrl/Cmd + Shift + Z, Ctrl + Y | Redo |
 | 0 | Fit to screen |

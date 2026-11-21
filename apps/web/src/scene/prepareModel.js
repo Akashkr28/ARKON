@@ -16,6 +16,22 @@ function partName(mesh, index) {
   );
 }
 
+const nodeName = (node) => node.userData.name || node.name || null;
+
+// The named assembly nodes above a part, outermost first (e.g. [Sentinel Mk I,
+// Left arm] for a gauntlet). Group ids only need to be unique while this model is open.
+function assemblyPath(mesh, content, partNameValue) {
+  const path = [];
+  for (let node = mesh.parent; node && node !== content; node = node.parent) {
+    const name = nodeName(node);
+    // A multi-material part is a named group of unnamed meshes; that group IS the
+    // part, not an assembly level above it.
+    const isThePartItself = node === mesh.parent && !nodeName(mesh) && name === partNameValue;
+    if (name && !isThePartItself) path.unshift({ id: `group-${node.id}`, name });
+  }
+  return path;
+}
+
 // For one mesh, work out how far (in its parent's local space) it should move
 // when the model is exploded by a factor of 1.
 function computeExplodeOffset(mesh, worldCenter, radius) {
@@ -57,6 +73,7 @@ export function prepareModel(gltfScene) {
     const worldBounds = new Box3().setFromObject(mesh);
     const worldCenter = worldBounds.getCenter(new Vector3());
     const size = worldBounds.getSize(new Vector3()).divideScalar(unitScale);
+    const name = partName(mesh, index);
 
     return {
       id,
@@ -67,7 +84,8 @@ export function prepareModel(gltfScene) {
       originalMaterial: mesh.material,
       info: {
         id,
-        name: partName(mesh, index),
+        name,
+        path: assemblyPath(mesh, content, name),
         vertexCount: mesh.geometry.attributes.position?.count ?? 0,
         size: size.toArray().map((v) => Number(v.toFixed(3))),
       },

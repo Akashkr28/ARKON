@@ -12,19 +12,32 @@ import { useViewerStore } from '../store/viewerStore';
 const SETTLE_MS = 400;
 const MAX_STEPS = 100;
 
-// Fields that make up "the arrangement". Later steps add hidden parts, etc.
-const TRACKED = ['position', 'rotation', 'scale', 'explodeTarget'];
+// Fields that make up "the arrangement".
+const TRACKED = ['position', 'rotation', 'scale', 'explodeTarget', 'hiddenPartIds', 'xrayPartIds'];
 
 export const useHistoryStore = create(() => ({ undoLabel: null, redoLabel: null }));
 
 const undoStack = [];
 const redoStack = [];
 let pendingBefore = null;
+let pendingLabel = null;
+let labelHint = null; // set by an action just before it changes the store
 let settleTimer = null;
 let applying = false;
 // Interactions in progress ('pointer', 'gesture'): a step never closes mid-drag,
 // however long the user pauses.
 const activeInteractions = new Set();
+
+// Actions whose intent the diff can't show (isolate looks like "hide 26 parts")
+// name their step. Call right before the change.
+export function nameNextStep(label) {
+  labelHint = label;
+  // The store notifies synchronously; if the action turned out to change nothing,
+  // don't let the name stick to some later, unrelated change.
+  queueMicrotask(() => {
+    if (labelHint === label) labelHint = null;
+  });
+}
 
 export function setInteractionActive(name, active) {
   if (active) {
@@ -42,11 +55,13 @@ function snapshot(state) {
   return Object.fromEntries(TRACKED.map((key) => [key, state[key]]));
 }
 
-const close = (a, b) => Math.abs(a - b) < 1e-6;
+function sameItem(a, b) {
+  return typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-6 : a === b;
+}
 
 function sameValue(a, b) {
-  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => close(v, b[i]));
-  return typeof a === 'number' && typeof b === 'number' ? close(a, b) : a === b;
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => sameItem(v, b[i]));
+  return sameItem(a, b);
 }
 
 function changedKeys(before, after) {
@@ -54,6 +69,12 @@ function changedKeys(before, after) {
 }
 
 function describe(before, after, keys) {
+  if (keys.includes('hiddenPartIds')) {
+    const diff = after.hiddenPartIds.length - before.hiddenPartIds.length;
+    if (after.hiddenPartIds.length === 0) return 'Show all';
+    return diff > 0 ? `Hide ${diff} part${diff === 1 ? '' : 's'}` : 'Show parts';
+  }
+  if (keys.includes('xrayPartIds')) return 'X-ray';
   if (keys.includes('explodeTarget')) return after.explodeTarget > before.explodeTarget ? 'Explode' : 'Assemble';
   if (keys.length === 1 && keys[0] === 'rotation') return 'Rotate';
   if (keys.length === 1 && keys[0] === 'position') return 'Move';
@@ -78,11 +99,13 @@ function settle(force = false) {
   const after = snapshot(useViewerStore.getState());
   const keys = changedKeys(pendingBefore, after);
   if (keys.length) {
-    undoStack.push({ before: pendingBefore, after, label: describe(pendingBefore, after, keys) });
+    const label = pendingLabel ?? describe(pendingBefore, after, keys);
+    undoStack.push({ before: pendingBefore, after, label });
     if (undoStack.length > MAX_STEPS) undoStack.shift();
     redoStack.length = 0;
   }
   pendingBefore = null;
+  pendingLabel = null;
   publish();
 }
 
@@ -96,6 +119,10 @@ function onStoreChange(state, previous) {
   const before = snapshot(previous);
   if (!changedKeys(before, snapshot(state)).length) return;
   pendingBefore ??= before;
+  if (labelHint) {
+    pendingLabel = labelHint;
+    labelHint = null;
+  }
   clearTimeout(settleTimer);
   settleTimer = setTimeout(settle, SETTLE_MS);
 }
@@ -134,6 +161,8 @@ export function clearHistory() {
   clearTimeout(settleTimer);
   settleTimer = null;
   pendingBefore = null;
+  pendingLabel = null;
+  labelHint = null;
   undoStack.length = 0;
   redoStack.length = 0;
   publish();
