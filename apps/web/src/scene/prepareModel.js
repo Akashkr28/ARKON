@@ -18,8 +18,8 @@ function partName(mesh, index) {
 
 const nodeName = (node) => node.userData.name || node.name || null;
 
-// The named assembly nodes above a part, outermost first (e.g. [Sentinel Mk I,
-// Left arm] for a gauntlet). Group ids only need to be unique while this model is open.
+// The named assembly nodes above a part, outermost first (e.g. [Aster C1,
+// Front left corner, Wheel] for a rim). Group ids only need to be unique while this model is open.
 function assemblyPath(mesh, content, partNameValue) {
   const path = [];
   for (let node = mesh.parent; node && node !== content; node = node.parent) {

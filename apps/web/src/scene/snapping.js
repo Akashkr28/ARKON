@@ -1,4 +1,4 @@
-import { Box3, EdgesGeometry, Raycaster, Sphere, Vector2, Vector3 } from 'three';
+import { Box3, EdgesGeometry, Matrix4, Raycaster, Sphere, Vector2, Vector3 } from 'three';
 import { MEASURE } from '../config';
 import { isPickable } from './picking';
 
@@ -118,16 +118,22 @@ export function createSceneQueries({ root, content, group, camera, size, meshByI
 
   function partsBounds(partIds) {
     const ids = new Set(partIds);
+    // Boxed in the group's own space, so neither the answer nor its tightness depends on
+    // how the model is turned (or where it is mid-animation).
     const box = new Box3();
+    const partBox = new Box3();
+    const toGroup = new Matrix4();
+    const groupInverse = new Matrix4().copy(group.matrixWorld).invert();
+    root.updateWorldMatrix(true, true);
     root.traverse((object) => {
-      if (object.isMesh && object.visible && ids.has(object.userData.partId)) box.expandByObject(object);
+      if (!object.isMesh || !object.visible || !ids.has(object.userData.partId)) return;
+      if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+      toGroup.multiplyMatrices(groupInverse, object.matrixWorld);
+      box.union(partBox.copy(object.geometry.boundingBox).applyMatrix4(toGroup));
     });
     if (box.isEmpty()) return null;
     const sphere = box.getBoundingSphere(new Sphere());
-    // Express it in the group's own space so the answer doesn't depend on where the
-    // model is mid-animation.
-    const center = group.worldToLocal(sphere.center.clone());
-    return { center: center.toArray(), radius: sphere.radius / group.scale.x };
+    return { center: sphere.center.toArray(), radius: sphere.radius };
   }
 
   function worldPointOf(point, out) {

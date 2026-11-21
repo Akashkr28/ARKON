@@ -21,7 +21,7 @@ describe.skipIf(!testUrl)('migrations (against DATABASE_URL_TEST)', () => {
   it('creates the tables, and running again is a no-op', async () => {
     const applied = [];
     await migrate(pool, { log: (line) => applied.push(line) });
-    expect(applied).toEqual(['applied 001_initial.sql']);
+    expect(applied).toEqual(['applied 001_initial.sql', 'applied 002_part_specs.sql']);
 
     const again = [];
     await migrate(pool, { log: (line) => again.push(line) });

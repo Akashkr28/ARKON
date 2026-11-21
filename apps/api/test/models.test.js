@@ -95,6 +95,26 @@ describe.skipIf(!testDatabaseUrl)('models API (against DATABASE_URL_TEST)', () =
       expect(file.body.subarray(0, 4).toString()).toBe('glTF');
     });
 
+    it('serves the measured part specs once converted', async () => {
+      const { body } = await uploadStep();
+      expect((await request(app).get(`/api/models/${body.id}/specs`)).status).toBe(409);
+
+      await worker.processNext();
+      const res = await request(app).get(`/api/models/${body.id}/specs`);
+      expect(res.status).toBe(200);
+      expect(res.body.units).toMatchObject({ length: 'mm', volume: 'mm3' });
+      expect(res.body.parts).toEqual([
+        {
+          index: 0,
+          name: 'Base plate',
+          spec: { partNumber: 'BP-1001', overallSizeMm: [140, 80, 8], volumeMm3: 89600 },
+        },
+      ]);
+      // The model detail stays light: no specs in it.
+      const detail = await request(app).get(`/api/models/${body.id}`);
+      expect(detail.body.parts[0].spec).toBeUndefined();
+    });
+
     it('accepts .stp and a custom name', async () => {
       const res = await uploadStep('PART.STP', { name: '  Pump housing  ' });
       expect(res.status).toBe(201);

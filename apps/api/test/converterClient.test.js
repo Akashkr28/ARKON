@@ -14,7 +14,16 @@ const responses = {
       part_count: 1,
       triangle_count: 12,
       bounds: { min: [0, 0, 0], max: [1, 1, 1], units: 'm' },
-      parts: [{ index: 0, name: 'Base plate', parent_name: 'Gearbox', triangle_count: 12, color: '#8c9199' }],
+      parts: [
+        {
+          index: 0,
+          name: 'Base plate',
+          parent_name: 'Gearbox',
+          triangle_count: 12,
+          color: '#8c9199',
+          spec: { part_number: 'BP-1001', volume_mm3: 89600, features: { holes: [{ diameter: 8, depth: 8, count: 4 }] } },
+        },
+      ],
     },
   ],
   'bad.step': [422, { detail: "This doesn't look like a STEP file." }],
@@ -59,7 +68,16 @@ describe('converter client', () => {
       triangleCount: 12,
       bounds: { min: [0, 0, 0], max: [1, 1, 1], units: 'm' },
       seconds: null,
-      parts: [{ index: 0, name: 'Base plate', parentName: 'Gearbox', triangleCount: 12, color: '#8c9199' }],
+      parts: [
+        {
+          index: 0,
+          name: 'Base plate',
+          parentName: 'Gearbox',
+          triangleCount: 12,
+          color: '#8c9199',
+          spec: { partNumber: 'BP-1001', volumeMm3: 89600, features: { holes: [{ diameter: 8, depth: 8, count: 4 }] } },
+        },
+      ],
     });
   });
 

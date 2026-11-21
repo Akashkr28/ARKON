@@ -137,6 +137,21 @@ describe('fitToParts', () => {
     expect(centre[1]).toBeCloseTo(0);
   });
 
+  it('brings parts far in front of or behind the model centre back to viewing depth', () => {
+    actions.resetModel();
+    const homeZ = useViewerStore.getState().position[2];
+    unregister = registerSceneQueries({
+      snapAt: () => null,
+      worldPointOf: () => null,
+      partsBounds: () => ({ center: [0, 0, 0.9], radius: 0.05 }), // near the front, from the front
+    });
+
+    actions.fitToParts(['part-0']);
+    const { scale, position, rotation } = useViewerStore.getState();
+    const centre = rotateXYZ([0, 0, 0.9], rotation).map((v, i) => position[i] + scale * v);
+    expect(centre).toEqual([expect.closeTo(0), expect.closeTo(0), expect.closeTo(homeZ)]);
+  });
+
   it('reports false when the scene has nothing to frame', () => {
     unregister = registerSceneQueries({ snapAt: () => null, worldPointOf: () => null, partsBounds: () => null });
     expect(actions.fitToParts(['part-9'])).toBe(false);

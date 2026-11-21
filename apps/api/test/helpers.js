@@ -77,7 +77,16 @@ export function fakeConverter(storage) {
         partCount: 1,
         triangleCount: 12,
         bounds: { min: [0, 0, 0], max: [0.1, 0.05, 0.08], units: 'm' },
-        parts: [{ index: 0, name: 'Base plate', parentName: 'Mini gearbox', triangleCount: 12, color: '#8c9199' }],
+        parts: [
+          {
+            index: 0,
+            name: 'Base plate',
+            parentName: 'Mini gearbox',
+            triangleCount: 12,
+            color: '#8c9199',
+            spec: { partNumber: 'BP-1001', overallSizeMm: [140, 80, 8], volumeMm3: 89600 },
+          },
+        ],
       };
     },
   };

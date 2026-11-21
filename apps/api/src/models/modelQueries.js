@@ -32,8 +32,8 @@ export async function replaceParts(db, modelId, parts) {
   await db.query('delete from model_parts where model_id = $1', [modelId]);
   if (parts.length === 0) return;
   await db.query(
-    `insert into model_parts (model_id, part_index, name, parent_name, triangle_count, color)
-     select $1, * from unnest($2::int[], $3::text[], $4::text[], $5::int[], $6::text[])`,
+    `insert into model_parts (model_id, part_index, name, parent_name, triangle_count, color, spec)
+     select $1, * from unnest($2::int[], $3::text[], $4::text[], $5::int[], $6::text[], $7::jsonb[])`,
     [
       modelId,
       parts.map((p) => p.index),
@@ -41,6 +41,7 @@ export async function replaceParts(db, modelId, parts) {
       parts.map((p) => p.parentName ?? null),
       parts.map((p) => p.triangleCount),
       parts.map((p) => p.color ?? null),
+      parts.map((p) => (p.spec ? JSON.stringify(p.spec) : null)),
     ],
   );
 }
@@ -65,6 +66,15 @@ export async function listModels(db, { limit = 100 } = {}) {
 export async function findModel(db, id) {
   const { rows } = await db.query(`select ${MODEL_COLUMNS} from models where id = $1`, [id]);
   return rows[0] ?? null;
+}
+
+// Kept out of findParts: specs can run to a few KB per part, and only the spec sheet needs them.
+export async function findPartSpecs(db, modelId) {
+  const { rows } = await db.query(
+    `select part_index, name, spec from model_parts where model_id = $1 order by part_index`,
+    [modelId],
+  );
+  return rows;
 }
 
 export async function findParts(db, modelId) {

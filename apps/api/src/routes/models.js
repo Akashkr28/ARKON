@@ -11,6 +11,7 @@ import {
   findLatestJob,
   findModel,
   findParts,
+  findPartSpecs,
   insertModel,
   listModels,
   replaceParts,
@@ -123,6 +124,19 @@ export function modelsRouter({ db, storage, worker, maxUploadBytes }) {
     const model = await loadModelOr404(req.params.id);
     const [parts, job] = await Promise.all([findParts(db, model.id), findLatestJob(db, model.id)]);
     res.json({ ...modelJson(model), parts: parts.map(partJson), job: jobJson(job) });
+  });
+
+  // Engineering data per part (STEP uploads; null for GLB uploads, which carry no CAD data).
+  router.get('/models/:id/specs', async (req, res) => {
+    const model = await loadModelOr404(req.params.id);
+    if (model.status !== 'ready') {
+      throw new HttpError(409, `Model is ${model.status}, not ready yet`);
+    }
+    const rows = await findPartSpecs(db, model.id);
+    res.json({
+      units: { length: 'mm', area: 'mm2', volume: 'mm3', mass: 'kg', density: 'kg/m3', position: 'm (viewer axes)' },
+      parts: rows.map((row) => ({ index: row.part_index, name: row.name, spec: row.spec })),
+    });
   });
 
   router.get('/models/:id/file', async (req, res) => {

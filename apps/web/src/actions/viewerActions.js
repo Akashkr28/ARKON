@@ -119,12 +119,15 @@ export function fitToView() {
 export function fitToParts(partIds, label = 'Fit to selection') {
   const bounds = sceneBounds(partIds);
   if (!bounds || bounds.radius <= 0) return false;
-  const { rotation, position } = get();
+  const { rotation } = get();
   // A radius of 1 scene unit at scale 1 is "the whole model fits" (see prepareModel).
   const scale = clamp(VIEW.modelRadius / bounds.radius, VIEW.minScale, VIEW.maxScale);
   const offset = rotateXYZ(bounds.center, rotation).map((v) => v * scale);
+  // Depth too: a part near the front of a long model (a car's battery, seen from the
+  // front) would otherwise land beside or behind the camera once scaled up.
+  const homeZ = initialTransform().position[2];
   nameNextStep(label);
-  set({ scale, position: [-offset[0], -offset[1], position[2]], spinVelocity: [0, 0] });
+  set({ scale, position: [-offset[0], -offset[1], homeZ - offset[2]], spinVelocity: [0, 0] });
   emit('fitToParts', { partIds });
   return true;
 }

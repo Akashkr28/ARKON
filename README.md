@@ -64,8 +64,15 @@ window.
 - Limits: 200 MB per file (`MAX_UPLOAD_MB`), 10 minutes per conversion (`CONVERSION_TIMEOUT_MIN`),
   both in `apps/api/.env`.
 
-A sample STEP assembly lives in `services/converter/samples/mini-gearbox.step`; regenerate it
-with `cd services/converter && uv run python -m holocad_converter.sample samples/mini-gearbox.step`.
+Two STEP assemblies come with the converter:
+
+- **Aster C1**, a full-size compact car (118 parts, 4.2 m long: body, chassis, powertrain,
+  interior, four corner assemblies with suspension, brakes and wheels). It's the model that opens
+  on startup. Generate its STEP (about 18 MB, not committed) with
+  `cd services/converter && uv run python -m holocad_converter.car samples/aster-c1.step`, then
+  upload it to try the whole pipeline on a real-sized product.
+- A small gearbox, `services/converter/samples/mini-gearbox.step`, for quick tests; regenerate it
+  with `uv run python -m holocad_converter.sample samples/mini-gearbox.step`.
 
 To ship a model with the app instead (works without the API), copy the `.glb` into
 `apps/web/public/models/` and add it to `MODELS` in `apps/web/src/config.js`. The bundled samples
@@ -203,6 +210,7 @@ it beyond your machine.
 | `POST /api/models` | multipart: `file` (.step/.stp/.glb), optional `name`, `quality` (draft/standard/fine). 201 with the model; STEP starts `queued` |
 | `GET /api/models` | `{ models: [...] }`, newest first |
 | `GET /api/models/:id` | model + `parts` (name, parent, triangle count, colour) + latest conversion `job` |
+| `GET /api/models/:id/specs` | exact engineering data per part, measured on the CAD geometry (STEP uploads; `null` for GLB): part number, description, material, overall size, volume, area, mass, centre of mass, face types, holes / outer diameters / fillets. 409 until ready |
 | `GET /api/models/:id/file` | the GLB (`model/gltf-binary`); 409 until the model is ready |
 | `POST /api/models/:id/retry` | re-convert a STEP model, optionally `{ "quality": "fine" }`; 202 |
 | `DELETE /api/models/:id` | removes the record and its files; 204 |
@@ -241,6 +249,7 @@ apps/api/
 services/converter/holocad_converter/
   convert.py                STEP → GLB (read, mesh by model size, write, report parts)
   app.py                    FastAPI: /health, /convert (paths confined to STORAGE_DIR)
+  car.py                    generates the Aster C1 car (the startup model)
   sample.py                 generates the sample gearbox assembly
 scripts/local-db.mjs        project-local Postgres
 ```

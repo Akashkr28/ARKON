@@ -26,6 +26,7 @@ from OCP.XCAFDoc import XCAFDoc_ShapeTool
 
 from .cad_document import DOCUMENT_UNIT_IN_METRES, new_document, shape_tool
 from .glb import list_parts
+from .specs import attach_specs, part_specs
 from .occt_messages import configure_occt_output
 
 configure_occt_output()
@@ -88,6 +89,8 @@ def _read_step(path: Path):
     reader.SetNameMode(True)
     reader.SetColorMode(True)
     reader.SetLayerMode(False)
+    reader.SetProductMetaMode(True)  # part numbers and descriptions
+    reader.SetMatMode(True)  # materials and densities
     if reader.ReadFile(str(path)) != IFSelect_ReturnStatus.IFSelect_RetDone:
         raise ConversionError("The STEP file couldn't be read; it may be damaged or incomplete.")
     if not reader.Transfer(doc, Message_ProgressRange()):
@@ -213,6 +216,7 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
         os.replace(partial, output_path)
     finally:
         partial.unlink(missing_ok=True)
+    attach_specs(parts, part_specs(doc))
 
     return ConversionResult(
         output_path=output_path,
@@ -223,3 +227,44 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
         parts=parts,
         seconds=time.perf_counter() - started,
     )
+
+
+SPEC_UNITS = {"length": "mm", "area": "mm2", "volume": "mm3", "mass": "kg", "density": "kg/m3", "position": "m (viewer axes)"}
+
+
+def _camel(value):
+    if isinstance(value, list):
+        return [_camel(v) for v in value]
+    if isinstance(value, dict):
+        return {re.sub(r"_([a-z0-9])", lambda m: m.group(1).upper(), k): _camel(v) for k, v in value.items()}
+    return value
+
+
+def specs_document(result: ConversionResult) -> dict:
+    """The same JSON the API serves at /api/models/:id/specs (camelCase)."""
+    return {
+        "units": SPEC_UNITS,
+        "parts": [{"index": p["index"], "name": p["name"], "spec": _camel(p.get("spec"))} for p in result.parts],
+    }
+
+
+def main(argv=None):
+    """Convert a STEP file and write its part specs beside it, for models bundled with the app:
+
+    uv run python -m holocad_converter.convert in.step out.glb [draft|standard|fine]
+    → out.glb and out.specs.json
+    """
+    import json
+    import sys
+
+    args = sys.argv[1:] if argv is None else argv
+    if len(args) not in (2, 3):
+        raise SystemExit(main.__doc__)
+    result = convert_step_to_glb(Path(args[0]), Path(args[1]), args[2] if len(args) == 3 else "standard")
+    specs_path = Path(args[1]).with_suffix(".specs.json")
+    specs_path.write_text(json.dumps(specs_document(result), separators=(",", ":")))
+    print(f"{result.part_count} parts, {result.glb_bytes // 1024} KB GLB, specs → {specs_path} ({result.seconds:.1f}s)")
+
+
+if __name__ == "__main__":
+    main()

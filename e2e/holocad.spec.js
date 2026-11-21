@@ -11,7 +11,7 @@ const treeRow = (page, name) => page.getByRole('treeitem', { name, exact: true }
 
 async function openApp(page) {
   await page.goto(APP);
-  await expect(status(page)).toContainText('MODEL ONLINE · 32 PARTS');
+  await expect(status(page)).toContainText('MODEL ONLINE · 118 PARTS');
   // The dev build exposes the app's stores for tests and debugging.
   await page.waitForFunction(() => window.holocad?.snapAt);
 }
@@ -20,30 +20,30 @@ test.describe('viewer', () => {
   test.beforeEach(async ({ page }) => openApp(page));
 
   test('shows the default model with real dimensions and its assembly tree', async ({ page }) => {
-    await expect(status(page)).toContainText('720 × 1780 × 388 MM');
-    for (const group of ['Head', 'Torso', 'Left arm', 'Right arm', 'Left leg', 'Right leg']) {
+    await expect(status(page)).toContainText('1990 × 1430 × 4220 MM');
+    for (const group of ['Body', 'Chassis', 'Powertrain', 'Interior', 'Front left corner', 'Rear right corner']) {
       await expect(treeRow(page, group)).toBeVisible();
     }
     await expect(page.getByText('Camera permission denied')).toHaveCount(0); // fake camera works
   });
 
   test('select a sub-assembly in the tree, isolate it, undo', async ({ page }) => {
-    await treeRow(page, 'Left arm').click();
-    await expect(page.locator('.part-info')).toContainText('6 parts selected');
+    await treeRow(page, 'Powertrain').click();
+    await expect(page.locator('.part-info')).toContainText('14 parts selected');
 
-    await treeRow(page, 'Left arm').dblclick();
-    await expect(page.locator('.tree-status')).toContainText('26 hidden');
+    await treeRow(page, 'Powertrain').dblclick();
+    await expect(page.locator('.tree-status')).toContainText('104 hidden');
     await expect(page.getByRole('button', { name: /UNDO/ })).toHaveAttribute('title', /Undo isolate/);
 
     await page.keyboard.press('ControlOrMeta+KeyZ');
-    await expect(page.locator('.tree-status')).toContainText('32 parts');
+    await expect(page.locator('.tree-status')).toContainText('118 parts');
     await expect(page.getByRole('button', { name: /REDO/ })).toHaveAttribute('title', /Redo isolate/);
   });
 
   test('search filters the tree', async ({ page }) => {
-    await page.getByRole('searchbox', { name: 'Search parts' }).fill('gaunt');
-    await expect(page.locator('.tree-row .tree-name', { hasText: 'Gauntlet' })).toHaveCount(2);
-    await expect(treeRow(page, 'Head')).toHaveCount(0);
+    await page.getByRole('searchbox', { name: 'Search parts' }).fill('caliper');
+    await expect(page.locator('.tree-row .tree-name', { hasText: 'Brake caliper' })).toHaveCount(4);
+    await expect(treeRow(page, 'Body')).toHaveCount(0);
   });
 
   test('standard views and fit', async ({ page }) => {
@@ -54,18 +54,21 @@ test.describe('viewer', () => {
   });
 
   test('measure a distance between two snapped corners', async ({ page }) => {
-    // Frame the neck ring from the front, then find two of its rim corners on screen.
+    // Isolate the radiator (a plain 720 mm wide box, deep inside the car), frame it from
+    // the front, then find its outermost corners on screen.
     const [a, b] = await page.evaluate(async () => {
       const { actions, viewerStore, snapAt } = window.holocad;
-      const ring = Object.values(viewerStore.getState().parts).find((p) => p.name === 'Neck ring').id;
+      const radiator = Object.values(viewerStore.getState().parts).find((p) => p.name === 'Radiator').id;
+      actions.isolateParts([radiator]);
       actions.setView('front');
-      actions.fitToParts([ring]);
+      actions.fitToParts([radiator]);
       await new Promise((r) => setTimeout(r, 1500)); // let the view settle
       const corners = [];
-      for (let y = 0; y < innerHeight; y += 4) {
-        for (let x = 0; x < innerWidth; x += 4) {
+      // Framed parts sit in the middle of the screen; scan that band only.
+      for (let y = innerHeight / 4; y < (innerHeight * 3) / 4; y += 6) {
+        for (let x = 0; x < innerWidth; x += 6) {
           const snap = snapAt(x, y);
-          if (snap?.partId === ring && snap.kind === 'vertex') corners.push({ x, y, metres: snap.metres });
+          if (snap?.partId === radiator && snap.kind === 'vertex') corners.push({ x, y, metres: snap.metres });
         }
       }
       const left = corners.reduce((p, q) => (q.metres[0] < p.metres[0] ? q : p));
@@ -82,7 +85,7 @@ test.describe('viewer', () => {
 
     const value = page.locator('.measure-row .measure-value').first();
     await expect(value).toContainText(`${expectedMm.toFixed(1)} mm`);
-    expect(expectedMm).toBeGreaterThan(100); // across the 136 mm ring, not a stray point
+    expect(expectedMm).toBeGreaterThan(700); // across the 720 mm radiator, not a stray point
     await expect(page.locator('.measure-label')).toHaveCount(1);
   });
 
@@ -90,7 +93,7 @@ test.describe('viewer', () => {
     await page.keyboard.press('s');
     await page.keyboard.press('s');
     await expect(page.locator('.section-axis.is-active')).toHaveText('Y');
-    await expect(page.locator('.section-position')).toContainText('Y = 890.0 mm'); // halfway up 1780 mm
+    await expect(page.locator('.section-position')).toContainText('Y = 715.1 mm'); // halfway up the 1430 mm car
 
     await page.getByRole('button', { name: /FLIP/ }).click();
     await expect.poll(() => page.evaluate(() => window.holocad.viewerStore.getState().section.flip)).toBe(true);
@@ -120,7 +123,7 @@ test.describe('library', () => {
     await row.getByRole('button', { name: /^Delete/ }).click();
     await row.getByRole('button', { name: /^Confirm delete/ }).click();
     await expect(row).toHaveCount(0);
-    await expect(status(page)).toContainText('32 PARTS');
+    await expect(status(page)).toContainText('118 PARTS');
   });
 
   test('rejects a file that is not really STEP', async ({ page }) => {
