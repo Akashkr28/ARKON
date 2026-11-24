@@ -1,5 +1,7 @@
 # HoloCAD
 
+[![CI](https://github.com/Akashkr28/ARKON/actions/workflows/ci.yml/badge.svg)](https://github.com/Akashkr28/ARKON/actions/workflows/ci.yml)
+
 A browser-based "holographic" CAD viewer. Your webcam is the background, a glowing 3D model floats
 over it, and you control it with hand gestures tracked by MediaPipe. No AR hardware. Upload your
 own STEP or GLB files; STEP assemblies are converted on your machine with OpenCASCADE, keeping part
@@ -96,8 +98,16 @@ and their attribution are listed in `apps/web/public/models/ATTRIBUTION.md`.
 
 ## Gestures
 
+Each hand is also a **cursor** (a ring at your pinch point). A quick pinch is a **tap**: it
+presses whatever button, tab or dropdown is under it, or clicks the model like a mouse. The
+full list is in [docs/CONTROLS.md](docs/CONTROLS.md).
+
 | Gesture | What it does |
 |---|---|
+| 👌 Tap (quick pinch) | Press the button / tab / dropdown under the cursor, or select the part |
+| 🖐 + 👌 Tap with the other palm open | Add a part to the selection |
+| 👌👌 Double tap | Frame that part |
+| 👌↕ Pinch-drag a panel or slider | Scroll it / drag it |
 | ✊ Fist (one hand) | Grab and move the model |
 | ☝ Point and move the fingertip | Rotate the model with your finger |
 | ☝ Point, then flick the finger | Spin the model; it coasts and slows down |
@@ -106,7 +116,7 @@ and their attribution are listed in `apps/web/public/models/ATTRIBUTION.md`.
 | ✊↺ Twist one fist counter-clockwise (in place) | Explode; twist back to reduce |
 | 👌 Pinch a part (while exploded) | Pick it and pull it out; it springs back on release |
 | 👌 Keep holding the part ~1 s | Show its info card (name, vertices, bounding box) |
-| 👌 Pinch and hold on empty space ~0.6 s | Radial menu: move toward an item, release to choose (EXPLODE/ASSEMBLE, RESET, MATERIAL, SPAWN HERE) |
+| 👌 Pinch and hold on empty space ~0.6 s | Radial menu of eight commands: explode, select all, fit, isolate, material, hide, undo, reset |
 | 👏 Clap | Reassemble |
 
 ## Mouse, trackpad and touch
@@ -309,11 +319,23 @@ bloom halos intact. Original-materials mode switches to normal alpha compositing
   `npm run db:start` (for `DATABASE_URL_TEST`) and, once, `npx playwright install chromium`.
   `npm run test:e2e -- --ui` lets you watch it.
 
-The test browser has a fake camera and `?tracking=off`, so hand gestures themselves aren't
-covered end-to-end; the gesture engine is tested with synthetic hand data instead.
+The test browser has a fake camera and `?tracking=off`, so the webcam itself isn't covered
+end-to-end; the gesture engine is driven with synthetic hands instead, in unit tests and in
+the browser (taps pressing real buttons, dropdowns and parts).
+
+## Code quality and CI
+
+- `npm run lint`: ESLint (JS/JSX, with the React hooks rules) and Ruff (Python).
+- `npm run format` / `npm run format:check`: Prettier for JS, CSS and JSON; Ruff for Python.
+- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every push and pull
+  request: lint and formatting, web unit tests and production build, API tests against a
+  Postgres service, converter tests against real OpenCASCADE, then the Playwright end-to-end
+  suite. A failed end-to-end run uploads its report and traces.
+- `git config blame.ignoreRevsFile .git-blame-ignore-revs` hides the one-off reformatting
+  commit from `git blame`.
 
 ## Not yet built
 
 Hand occlusion (hands passing in front of the model), section caps (filled cut faces), saving
-views/measurements, accounts and hosting (Phase 4), assembling and parametric design (Phase 5),
-review / training / configurator modules (Phase 6), AI assistant and WebXR (Phase 7). Each has a `TODO(...)` hook; see `apps/web/src/integrations/README.md`.
+views/measurements, Docker and hosting with accounts (Phase 6), review / training /
+configurator modules, AI assistant and WebXR. Each has a `TODO(...)` hook; see `apps/web/src/integrations/README.md`.
