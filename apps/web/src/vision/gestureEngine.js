@@ -8,7 +8,16 @@ import { screenToNdc } from './projection';
 import { setInteractionActive } from '../actions/history';
 import { beginHandleDrag, endHandleDrag, moveHandleDrag } from '../actions/handleDrag';
 import { undoHere } from '../actions/commands';
-import { clickAt, doubleClickAt, hudTargetAt, isSlider, pressHud, scrollHud, setHandHover, slideHud } from '../input/handCursor';
+import {
+  clickAt,
+  doubleClickAt,
+  hudTargetAt,
+  isSlider,
+  pressHud,
+  scrollHud,
+  setHandHover,
+  slideHud,
+} from '../input/handCursor';
 
 // Turns per-frame hands into viewer actions. One explicit state at a time; each
 // state decides when it ends. Never touches three.js — only calls viewerActions
@@ -108,7 +117,8 @@ const movedFar = (hand, start) => screenDistance(hand.pinchScreen, start) > GEST
 // frame.taps.last remembers the previous tap ({ x, y, ms }) for double taps.
 function tapScene(point, frame, handId) {
   const { last } = frame.taps;
-  const double = last && frame.nowMs - last.ms <= GESTURE.doubleTapMs && screenDistance(point, last) <= GESTURE.doubleTapPx;
+  const double =
+    last && frame.nowMs - last.ms <= GESTURE.doubleTapMs && screenDistance(point, last) <= GESTURE.doubleTapPx;
   frame.taps.last = double ? null : { x: point.x, y: point.y, ms: frame.nowMs };
   if (double) {
     doubleClickAt(point.x, point.y);
@@ -444,7 +454,12 @@ const draggingHandle = {
 const hasSelection = () => useViewerStore.getState().selectedPartIds.length > 0;
 
 export const MENU_ITEMS = [
-  { id: 'explode', angle: -90, label: () => (actions.isExploded() ? 'ASSEMBLE' : 'EXPLODE'), run: () => actions.toggleExplode() },
+  {
+    id: 'explode',
+    angle: -90,
+    label: () => (actions.isExploded() ? 'ASSEMBLE' : 'EXPLODE'),
+    run: () => actions.toggleExplode(),
+  },
   {
     id: 'select',
     angle: -45,
@@ -468,7 +483,10 @@ export const MENU_ITEMS = [
     id: 'hide',
     angle: 135,
     label: () => (hasSelection() ? 'HIDE' : 'SPAWN HERE'),
-    run: (data) => (hasSelection() ? actions.hideParts() : actions.spawnAt(data.centerWorld.x, data.centerWorld.y, data.centerWorld.z)),
+    run: (data) =>
+      hasSelection()
+        ? actions.hideParts()
+        : actions.spawnAt(data.centerWorld.x, data.centerWorld.y, data.centerWorld.z),
   },
   { id: 'undo', angle: 180, label: () => 'UNDO', run: () => undoHere() },
   { id: 'reset', angle: -135, label: () => 'RESET', run: () => actions.resetModel() },
@@ -584,7 +602,8 @@ export function createGestureEngine() {
       }
       // Outline what a tap would press, under the hand in control (or the first free one).
       const aiming =
-        (data.handIds && findHand(frame, data.handIds[0])) ?? frame.tracked.find((t) => t.pose !== POSE.FIST && t.pose !== POSE.OPEN);
+        (data.handIds && findHand(frame, data.handIds[0])) ??
+        frame.tracked.find((t) => t.pose !== POSE.FIST && t.pose !== POSE.OPEN);
       const canAim = state === STATE.IDLE || state === STATE.PINCHING || state === STATE.HUD_PRESS;
       if (canAim && aiming) setHandHover(aiming.hand.pinchScreen.x, aiming.hand.pinchScreen.y);
       else setHandHover(null);

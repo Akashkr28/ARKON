@@ -21,7 +21,11 @@ const responses = {
           parent_name: 'Gearbox',
           triangle_count: 12,
           color: '#8c9199',
-          spec: { part_number: 'BP-1001', volume_mm3: 89600, features: { holes: [{ diameter: 8, depth: 8, count: 4 }] } },
+          spec: {
+            part_number: 'BP-1001',
+            volume_mm3: 89600,
+            features: { holes: [{ diameter: 8, depth: 8, count: 4 }] },
+          },
         },
       ],
     },

@@ -90,8 +90,7 @@ export function useWebcam(videoRef, deviceId) {
   }, [videoRef, deviceId]);
 
   useEffect(() => {
-    const onChange = () =>
-      refreshCameraList(useViewerStore.getState().activeCameraId).catch(() => {});
+    const onChange = () => refreshCameraList(useViewerStore.getState().activeCameraId).catch(() => {});
     navigator.mediaDevices?.addEventListener?.('devicechange', onChange);
     return () => navigator.mediaDevices?.removeEventListener?.('devicechange', onChange);
   }, []);

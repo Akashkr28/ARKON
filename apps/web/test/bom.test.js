@@ -19,7 +19,10 @@ const block = {
   features: { holes: [{ diameter: 80, depth: 250, count: 4 }] },
 };
 const specs = [disc, block];
-const at = (name) => [{ id: 'g', name: 'Car' }, { id: `g-${name}`, name }];
+const at = (name) => [
+  { id: 'g', name: 'Car' },
+  { id: `g-${name}`, name },
+];
 const parts = [
   { id: 'part-0', name: 'Brake disc', specIndex: 0, path: at('Front left corner') },
   { id: 'part-1', name: 'Engine block', specIndex: 1, path: at('Powertrain') },
@@ -67,10 +70,13 @@ describe('bill of materials', () => {
 
 describe('CSV', () => {
   const csv = bomCsv(buildBom({ parts, specs }));
-  const lines = csv.replace(/^﻿/, '').trimEnd().split('\r\n');
+  const lines = csv
+    .replace(/^\uFEFF/, '')
+    .trimEnd()
+    .split('\r\n');
 
   it('starts with a byte-order mark and a header, one line per row', () => {
-    expect(csv.startsWith('﻿')).toBe(true);
+    expect(csv.startsWith('\uFEFF')).toBe(true);
     expect(lines[0]).toMatch(/^Item,Part number,Part name,Description,Qty,Material,/);
     expect(lines[0]).toContain('Length (mm)');
     expect(lines).toHaveLength(4);

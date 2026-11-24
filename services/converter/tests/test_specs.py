@@ -110,5 +110,14 @@ def test_recognises_holes_boss_and_fillets(bracket):
 def test_specs_document_is_camel_case(tmp_path):
     from holocad_converter.convert import ConversionResult
 
-    result = ConversionResult(tmp_path, 0, 1, 0, {}, [{"index": 0, "name": "A", "spec": {"volume_mm3": 1, "features": {"outer_diameters": []}}}])
-    assert specs_document(result)["parts"] == [{"index": 0, "name": "A", "spec": {"volumeMm3": 1, "features": {"outerDiameters": []}}}]
+    result = ConversionResult(
+        tmp_path,
+        0,
+        1,
+        0,
+        {},
+        [{"index": 0, "name": "A", "spec": {"volume_mm3": 1, "features": {"outer_diameters": []}}}],
+    )
+    assert specs_document(result)["parts"] == [
+        {"index": 0, "name": "A", "spec": {"volumeMm3": 1, "features": {"outerDiameters": []}}}
+    ]

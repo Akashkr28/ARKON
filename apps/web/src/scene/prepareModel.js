@@ -8,13 +8,7 @@ const FALLBACK_DIRECTION = new Vector3(0, 1, 0);
 // keeps the original in userData.name. A multi-material part is a group of meshes,
 // so fall back to the parent's name.
 function partName(mesh, index) {
-  return (
-    mesh.userData.name ||
-    mesh.parent?.userData.name ||
-    mesh.name ||
-    mesh.parent?.name ||
-    `Part ${index + 1}`
-  );
+  return mesh.userData.name || mesh.parent?.userData.name || mesh.name || mesh.parent?.name || `Part ${index + 1}`;
 }
 
 const nodeName = (node) => node.userData.name || node.name || null;

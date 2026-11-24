@@ -126,7 +126,7 @@ export function bomCsv(bom) {
     );
   }
   // CRLF and a byte-order mark: what Excel expects to open UTF-8 (Ø, ², ³) correctly.
-  return `﻿${lines.join('\r\n')}\r\n`;
+  return `\uFEFF${lines.join('\r\n')}\r\n`;
 }
 
 export function exportFileName(modelLabel, suffix) {

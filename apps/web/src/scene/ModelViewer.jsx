@@ -100,7 +100,10 @@ export function LoadedModel({ scene, frame = null, overlay = null }) {
   const pulledParts = useRef(new Set()); // parts with a non-zero pull to animate
 
   useEffect(() => {
-    modelLoaded(parts.map((p) => p.info), { metresPerSceneUnit, modelSize, modelBounds });
+    modelLoaded(
+      parts.map((p) => p.info),
+      { metresPerSceneUnit, modelSize, modelBounds },
+    );
   }, [parts, metresPerSceneUnit, modelSize, modelBounds]);
 
   useEffect(() => registerPicker(createPicker(root, camera)), [root, camera]);
@@ -108,9 +111,7 @@ export function LoadedModel({ scene, frame = null, overlay = null }) {
   useEffect(() => {
     const meshById = new Map(parts.map((p) => [p.id, p.mesh]));
     const content = root.children[0];
-    return registerSceneQueries(
-      createSceneQueries({ root, content, group: groupRef.current, camera, size, meshById }),
-    );
+    return registerSceneQueries(createSceneQueries({ root, content, group: groupRef.current, camera, size, meshById }));
   }, [root, parts, camera, size]);
 
   useEffect(() => {
@@ -153,7 +154,18 @@ export function LoadedModel({ scene, frame = null, overlay = null }) {
       }
       return clone;
     }
-  }, [parts, materialMode, selectedPartIds, hiddenPartIds, xrayPartIds, sectionActive, clipPlanes, hologramMaterial, selectedMaterial, xrayHologramMaterial]);
+  }, [
+    parts,
+    materialMode,
+    selectedPartIds,
+    hiddenPartIds,
+    xrayPartIds,
+    sectionActive,
+    clipPlanes,
+    hologramMaterial,
+    selectedMaterial,
+    xrayHologramMaterial,
+  ]);
 
   useEffect(
     () => () => {

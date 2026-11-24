@@ -24,7 +24,12 @@ export async function tempStorage() {
 
 // A minimal but valid GLB: one root node with two mesh children. No binary chunk;
 // the inspection code only reads the JSON.
-export function makeGlb({ parts = [{ name: 'Part A', triangles: 12 }, { name: 'Part B', triangles: 4 }] } = {}) {
+export function makeGlb({
+  parts = [
+    { name: 'Part A', triangles: 12 },
+    { name: 'Part B', triangles: 4 },
+  ],
+} = {}) {
   const gltf = {
     asset: { version: '2.0' },
     scene: 0,
@@ -33,7 +38,9 @@ export function makeGlb({ parts = [{ name: 'Part A', triangles: 12 }, { name: 'P
       { name: 'Assembly', children: parts.map((_, i) => i + 1) },
       ...parts.map((part, i) => ({ name: part.name, mesh: i })),
     ],
-    meshes: parts.map((_, i) => ({ primitives: [{ attributes: { POSITION: i }, indices: parts.length + i, material: 0 }] })),
+    meshes: parts.map((_, i) => ({
+      primitives: [{ attributes: { POSITION: i }, indices: parts.length + i, material: 0 }],
+    })),
     accessors: [
       ...parts.map((part) => ({ count: part.triangles * 3, type: 'VEC3', componentType: 5126 })),
       ...parts.map((part) => ({ count: part.triangles * 3, type: 'SCALAR', componentType: 5125 })),
@@ -51,7 +58,8 @@ export function makeGlb({ parts = [{ name: 'Part A', triangles: 12 }, { name: 'P
   return Buffer.concat([header, json]);
 }
 
-export const STEP_TEXT = 'ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((\'test\'),\'2;1\');\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n';
+export const STEP_TEXT =
+  "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('test'),'2;1');\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n";
 
 export const FAKE_FACES = {
   units: { length: 'mm' },

@@ -46,7 +46,14 @@ def _gear(outer_radius, thickness, teeth, bore_radius):
     notch_depth = outer_radius * 0.18
     notch_width = 2 * math.pi * outer_radius / teeth / 2
     for i in range(teeth):
-        notch = _box(notch_depth * 2, notch_width, thickness + 2, outer_radius - notch_depth, -notch_width / 2, -1)
+        notch = _box(
+            notch_depth * 2,
+            notch_width,
+            thickness + 2,
+            outer_radius - notch_depth,
+            -notch_width / 2,
+            -1,
+        )
         spin = gp_Trsf()
         spin.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1)), 2 * math.pi * i / teeth)
         shape = BRepAlgoAPI_Cut(shape, notch.Moved(TopLoc_Location(spin))).Shape()

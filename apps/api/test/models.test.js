@@ -180,9 +180,7 @@ describe.skipIf(!testDatabaseUrl)('models API (against DATABASE_URL_TEST)', () =
 
   describe('uploading a GLB', () => {
     it('is ready immediately, with parts read from the file', async () => {
-      const res = await request(app)
-        .post('/api/models')
-        .attach('file', makeGlb(), 'scan.glb');
+      const res = await request(app).post('/api/models').attach('file', makeGlb(), 'scan.glb');
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ sourceFormat: 'glb', status: 'ready', partCount: 2, triangleCount: 16 });
 

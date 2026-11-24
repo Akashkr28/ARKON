@@ -23,8 +23,6 @@ from OCP.BRepBuilderAPI import (
     BRepBuilderAPI_MakePolygon,
     BRepBuilderAPI_MakeWire,
 )
-from OCP.GeomAPI import GeomAPI_Interpolate
-from OCP.collections import HArray1_gp_Pnt
 from OCP.BRepFilletAPI import BRepFilletAPI_MakeFillet
 from OCP.BRepOffsetAPI import BRepOffsetAPI_ThruSections
 from OCP.BRepPrimAPI import (
@@ -35,6 +33,8 @@ from OCP.BRepPrimAPI import (
     BRepPrimAPI_MakeSphere,
     BRepPrimAPI_MakeTorus,
 )
+from OCP.collections import HArray1_gp_Pnt
+from OCP.GeomAPI import GeomAPI_Interpolate
 from OCP.gp import gp_Ax1, gp_Ax2, gp_Dir, gp_Pnt, gp_Trsf, gp_Vec
 from OCP.IFSelect import IFSelect_ReturnStatus
 from OCP.Quantity import Quantity_Color, Quantity_ColorRGBA, Quantity_TypeOfColor
@@ -175,7 +175,9 @@ def hex_prism(radius, height, origin=(0, 0, 0)):
     polygon = BRepBuilderAPI_MakePolygon()
     for i in range(6):
         a = math.pi / 6 + i * math.pi / 3
-        polygon.Add(gp_Pnt(origin[0] + radius * math.cos(a), origin[1] + radius * math.sin(a), origin[2]))
+        polygon.Add(
+            gp_Pnt(origin[0] + radius * math.cos(a), origin[1] + radius * math.sin(a), origin[2])
+        )
     polygon.Close()
     face = BRepBuilderAPI_MakeFace(polygon.Wire()).Face()
     return BRepPrimAPI_MakePrism(face, gp_Vec(0, 0, height)).Shape()
@@ -250,7 +252,9 @@ def _shrunk(sections, inset):
 def wheel_arches():
     arches = []
     for y in (FRONT_AXLE_Y, REAR_AXLE_Y):
-        arches.append(cylinder(WHEEL_RADIUS + 55, 2 * BIG, origin=(-BIG, y, WHEEL_RADIUS), axis=(1, 0, 0)))
+        arches.append(
+            cylinder(WHEEL_RADIUS + 55, 2 * BIG, origin=(-BIG, y, WHEEL_RADIUS), axis=(1, 0, 0))
+        )
     return arches
 
 
@@ -335,7 +339,13 @@ def door_mirror():
 
 def wheel_parts():
     """Rim, tyre, centre cap, 5 lug nuts. Axis along Z here; turned to X when placed."""
-    tyre = fillet(cut(cylinder(WHEEL_RADIUS, 205, origin=(0, 0, -102.5)), cylinder(216, 300, origin=(0, 0, -150))), 45)
+    tyre = fillet(
+        cut(
+            cylinder(WHEEL_RADIUS, 205, origin=(0, 0, -102.5)),
+            cylinder(216, 300, origin=(0, 0, -150)),
+        ),
+        45,
+    )
     barrel = cut(cylinder(216, 190, origin=(0, 0, -95)), cylinder(200, 300, origin=(0, 0, -150)))
     face = cylinder(216, 24, origin=(0, 0, 70))
     for i in range(5):
@@ -351,11 +361,17 @@ def wheel_parts():
 
 def corner_parts():
     to_x = dict(ry=90)  # local Z axis → X (outboard)
-    disc = moved(cut(cylinder(160, 26, origin=(0, 0, -13)), cylinder(60, 60, origin=(0, 0, -30))), x=-35, **to_x)
+    disc = moved(
+        cut(cylinder(160, 26, origin=(0, 0, -13)), cylinder(60, 60, origin=(0, 0, -30))),
+        x=-35,
+        **to_x,
+    )
     caliper = fillet(box(-70, -10, 40, 150, 70, 170), 18)
     hub = cylinder(70, 70, origin=(-110, 0, 0), axis=(1, 0, 0))
     knuckle = fillet(box(-190, -110, -70, 70, -110, 150), 15)
-    damper = fuse(cylinder(26, 280, origin=(-160, 0, 150)), cylinder(14, 220, origin=(-160, 0, 420)))
+    damper = fuse(
+        cylinder(26, 280, origin=(-160, 0, 150)), cylinder(14, 220, origin=(-160, 0, 420))
+    )
     # Coils as flat rings: reads as a spring, at a fraction of the triangles of a helix or tori.
     coil = cut(cylinder(70, 14, origin=(-160, 0, 0)), cylinder(54, 30, origin=(-160, 0, -8)))
     spring = fuse(*[moved(coil, z=213 + 38 * i) for i in range(7)])
@@ -381,7 +397,11 @@ def frame_rail():
 def chassis_parts():
     return [
         ("Front subframe", CHASSIS, fillet(box(-560, 560, -1560, -1100, 245, 300), 10)),
-        ("Rear axle beam", CHASSIS, cylinder(42, 1300, origin=(-650, REAR_AXLE_Y - 60, 300), axis=(1, 0, 0))),
+        (
+            "Rear axle beam",
+            CHASSIS,
+            cylinder(42, 1300, origin=(-650, REAR_AXLE_Y - 60, 300), axis=(1, 0, 0)),
+        ),
         ("Front crossmember", CHASSIS, fillet(box(-650, 650, -1850, -1780, 300, 420), 10)),
     ]
 
@@ -393,14 +413,22 @@ def powertrain_parts():
     head = fillet(box(-340, 180, -1590, -1250, 700, 780), 12)
     valve_cover = fillet(box(-320, 160, -1560, -1280, 780, 815), 15)
     oil_pan = fillet(box(-320, 160, -1560, -1280, 300, 360), 12)
-    intake = fuse(*[cylinder(22, 160, origin=(-260 + i * 120, -1250, 690), axis=(0, 1, 0)) for i in range(4)],
-                  cylinder(45, 520, origin=(-340, -1090, 690), axis=(1, 0, 0)))
-    exhaust = fuse(*[cylinder(20, 120, origin=(-260 + i * 120, -1720, 620), axis=(0, 1, 0)) for i in range(4)],
-                   cylinder(35, 480, origin=(-320, -1720, 620), axis=(1, 0, 0)))
+    intake = fuse(
+        *[cylinder(22, 160, origin=(-260 + i * 120, -1250, 690), axis=(0, 1, 0)) for i in range(4)],
+        cylinder(45, 520, origin=(-340, -1090, 690), axis=(1, 0, 0)),
+    )
+    exhaust = fuse(
+        *[cylinder(20, 120, origin=(-260 + i * 120, -1720, 620), axis=(0, 1, 0)) for i in range(4)],
+        cylinder(35, 480, origin=(-320, -1720, 620), axis=(1, 0, 0)),
+    )
     bell = cone(210, 170, 120, origin=(180, -1420, 520), axis=(1, 0, 0))
     gearbox = fuse(bell, fillet(box(300, 560, -1540, -1300, 360, 640), 25))
-    left_shaft = cylinder(22, 520, origin=(-TRACK / 2 + 200, FRONT_AXLE_Y, WHEEL_RADIUS), axis=(1, 0, 0))
-    right_shaft = cylinder(22, TRACK / 2 - 200 - 560, origin=(560, FRONT_AXLE_Y, WHEEL_RADIUS), axis=(1, 0, 0))
+    left_shaft = cylinder(
+        22, 520, origin=(-TRACK / 2 + 200, FRONT_AXLE_Y, WHEEL_RADIUS), axis=(1, 0, 0)
+    )
+    right_shaft = cylinder(
+        22, TRACK / 2 - 200 - 560, origin=(560, FRONT_AXLE_Y, WHEEL_RADIUS), axis=(1, 0, 0)
+    )
     pipe = cylinder(28, 3300, origin=(250, -1650, 205), axis=(0, 1, 0))
     muffler = fillet(box(130, 470, 1500, 1860, 150, 270), 40)
     return [
@@ -434,9 +462,15 @@ def interior_parts():
         moved(fillet(box(-640, 640, -55, 55, 0, 560), 35), y=960, z=400, rx=-18),
     )
     column = moved(cylinder(25, 420), x=-380, y=-640, z=780, rx=70)
-    wheel = moved(fuse(torus(185, 16), cylinder(45, 40, origin=(0, 0, -20))), x=-380, y=-320, z=900, rx=70)
+    wheel = moved(
+        fuse(torus(185, 16), cylinder(45, 40, origin=(0, 0, -20))), x=-380, y=-320, z=900, rx=70
+    )
     pedals = [
-        (f"{name} pedal", STEEL, moved(fillet(box(-35, 35, -8, 8, 0, 110), 4), x=x, y=-600, z=300, rx=20))
+        (
+            f"{name} pedal",
+            STEEL,
+            moved(fillet(box(-35, 35, -8, 8, 0, 110), 4), x=x, y=-600, z=300, rx=20),
+        )
         for name, x in (("Clutch", -500), ("Brake", -400), ("Accelerator", -300))
     ]
     return [
@@ -444,7 +478,11 @@ def interior_parts():
         ("Steering column", STEEL, column),
         ("Steering wheel", INTERIOR, wheel),
         ("Centre console", INTERIOR, fillet(box(-110, 110, -520, 250, 245, 500), 30)),
-        ("Gear lever", INTERIOR, fuse(cylinder(10, 140, origin=(0, -360, 500)), sphere(28, (0, -360, 650)))),
+        (
+            "Gear lever",
+            INTERIOR,
+            fuse(cylinder(10, 140, origin=(0, -360, 500)), sphere(28, (0, -360, 650))),
+        ),
         ("Rear bench", INTERIOR, bench),
         *pedals,
     ]

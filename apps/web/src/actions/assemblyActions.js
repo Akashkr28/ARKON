@@ -73,7 +73,9 @@ export function normaliseAssembly(raw) {
     } else if (c.source?.kind === 'model' && typeof c.source.modelId === 'string') {
       source = { kind: 'model', modelId: c.source.modelId };
     } else return [];
-    const appearance = c.appearance ? normaliseAppearance(c.appearance, { allowNoMaterial: source.kind === 'model' }) : null;
+    const appearance = c.appearance
+      ? normaliseAppearance(c.appearance, { allowNoMaterial: source.kind === 'model' })
+      : null;
     return [
       {
         id: typeof c.id === 'string' ? c.id : newId('part'),
@@ -86,25 +88,28 @@ export function normaliseAssembly(raw) {
     ];
   });
   const ids = new Set(components.map((c) => c.id));
-  const mates = (Array.isArray(raw.mates) ? raw.mates : []).filter(
-    (m) =>
-      m &&
-      MATE_TYPES[m.type] &&
-      ids.has(m.moving?.componentId) &&
-      ids.has(m.target?.componentId) &&
-      isGeometry(m.moving.geometry) &&
-      isGeometry(m.target.geometry) &&
-      isNumberList(m.relative, 4),
-  ).map((m) => ({
-    id: typeof m.id === 'string' ? m.id : newId('mate'),
-    type: m.type,
-    moving: { componentId: m.moving.componentId, geometry: m.moving.geometry, label: String(m.moving.label ?? '') },
-    target: { componentId: m.target.componentId, geometry: m.target.geometry, label: String(m.target.label ?? '') },
-    relative: m.relative,
-    slide: m.type === 'contact' ? (isNumberList(m.slide, 2) ? m.slide : [0, 0]) : Number.isFinite(m.slide) ? m.slide : 0,
-    gap: Number.isFinite(m.gap) ? m.gap : 0,
-    angle: Number.isFinite(m.angle) ? m.angle : 0,
-  }));
+  const mates = (Array.isArray(raw.mates) ? raw.mates : [])
+    .filter(
+      (m) =>
+        m &&
+        MATE_TYPES[m.type] &&
+        ids.has(m.moving?.componentId) &&
+        ids.has(m.target?.componentId) &&
+        isGeometry(m.moving.geometry) &&
+        isGeometry(m.target.geometry) &&
+        isNumberList(m.relative, 4),
+    )
+    .map((m) => ({
+      id: typeof m.id === 'string' ? m.id : newId('mate'),
+      type: m.type,
+      moving: { componentId: m.moving.componentId, geometry: m.moving.geometry, label: String(m.moving.label ?? '') },
+      target: { componentId: m.target.componentId, geometry: m.target.geometry, label: String(m.target.label ?? '') },
+      relative: m.relative,
+      slide:
+        m.type === 'contact' ? (isNumberList(m.slide, 2) ? m.slide : [0, 0]) : Number.isFinite(m.slide) ? m.slide : 0,
+      gap: Number.isFinite(m.gap) ? m.gap : 0,
+      angle: Number.isFinite(m.angle) ? m.angle : 0,
+    }));
   const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name.slice(0, 80) : 'Untitled assembly';
   return { name, components, mates };
 }
@@ -220,7 +225,9 @@ function ensureContent() {
 // A new part goes to the right of everything already there, standing on the same floor.
 function placeBesideOthers(componentId, box) {
   const { components, placements } = get();
-  const others = components.filter((c) => c.id !== componentId && contentOf(c.id) && get().content[c.id]?.status === 'ready');
+  const others = components.filter(
+    (c) => c.id !== componentId && contentOf(c.id) && get().content[c.id]?.status === 'ready',
+  );
   const width = box.max[0] - box.min[0];
   let position = [-(box.min[0] + box.max[0]) / 2, -box.min[1], -(box.min[2] + box.max[2]) / 2];
   if (others.length) {
@@ -234,7 +241,9 @@ function placeBesideOthers(componentId, box) {
   // Not an undo step of its own: it finishes adding the part.
   set({
     components: get().components.map((c) =>
-      c.id === componentId ? { ...c, position: position.map(round), quaternion: [0, 0, 0, 1], autoPlace: undefined } : c,
+      c.id === componentId
+        ? { ...c, position: position.map(round), quaternion: [0, 0, 0, 1], autoPlace: undefined }
+        : c,
     ),
   });
   solve();
@@ -279,7 +288,13 @@ export function closeAssembly() {
 }
 
 export function newAssembly() {
-  change('New assembly', () => ({ name: 'Untitled assembly', components: [], mates: [], selectedComponentId: null, message: null }));
+  change('New assembly', () => ({
+    name: 'Untitled assembly',
+    components: [],
+    mates: [],
+    selectedComponentId: null,
+    message: null,
+  }));
   set({ frame: null, tool: null, pick: null });
 }
 
@@ -298,7 +313,14 @@ function uniqueName(base) {
 }
 
 function addComponent(name, source) {
-  const component = { id: newId('part'), name: uniqueName(name), source, position: [0, 0, 0], quaternion: [0, 0, 0, 1], autoPlace: true };
+  const component = {
+    id: newId('part'),
+    name: uniqueName(name),
+    source,
+    position: [0, 0, 0],
+    quaternion: [0, 0, 0, 1],
+    autoPlace: true,
+  };
   change(`Add ${component.name}`, ({ components }) => ({
     components: [...components, component],
     selectedComponentId: component.id,
@@ -424,7 +446,8 @@ export function setComponentAppearance(id, patch) {
       ? null
       : normaliseAppearance({ ...(appearanceOf(component) ?? {}), ...patch }, { allowNoMaterial: model });
   const field = patch ? Object.keys(patch)[0] : 'paint';
-  const label = { materialId: 'Change material', color: 'Change colour', finish: 'Change finish' }[field] ?? 'Change look';
+  const label =
+    { materialId: 'Change material', color: 'Change colour', finish: 'Change finish' }[field] ?? 'Change look';
   change(
     `${label} of ${component.name}`,
     ({ components }) => ({
@@ -469,7 +492,11 @@ export function pickFace(face) {
     return;
   }
   if (!pick) {
-    set({ pick: face, selectedComponentId: face.componentId, message: `Now click a face on the part to attach ${nameOf(face.componentId)} to` });
+    set({
+      pick: face,
+      selectedComponentId: face.componentId,
+      message: `Now click a face on the part to attach ${nameOf(face.componentId)} to`,
+    });
     return;
   }
   if (face.componentId === pick.componentId) {
@@ -477,7 +504,9 @@ export function pickFace(face) {
     return;
   }
   if (wouldLoop(mates, pick.componentId, face.componentId)) {
-    set({ message: `${nameOf(face.componentId)} is already attached to ${nameOf(pick.componentId)}: attach it the other way round` });
+    set({
+      message: `${nameOf(face.componentId)} is already attached to ${nameOf(pick.componentId)}: attach it the other way round`,
+    });
     return;
   }
   let mate;
@@ -493,7 +522,12 @@ export function pickFace(face) {
     mates: [...list.filter((m) => m.moving.componentId !== moving), mate],
     selectedComponentId: moving,
   }));
-  set({ tool: null, pick: null, hoverFace: null, message: `${nameOf(moving)} ${MATE_TYPES[tool].label.toLowerCase()} on ${nameOf(face.componentId)}` });
+  set({
+    tool: null,
+    pick: null,
+    hoverFace: null,
+    message: `${nameOf(moving)} ${MATE_TYPES[tool].label.toLowerCase()} on ${nameOf(face.componentId)}`,
+  });
 }
 
 export function removeMate(mateId) {
@@ -522,7 +556,11 @@ export function setMateValue(mateId, key, value, { coalesceKey = `${mateId}.${ke
   if (!mate || !MATE_FIELDS[key] || !Number.isFinite(number)) return;
   if (key === 'slide' && mate.type === 'contact') return;
   const patch =
-    key === 'slideU' ? { slide: [number, mate.slide[1]] } : key === 'slideV' ? { slide: [mate.slide[0], number] } : { [key]: number };
+    key === 'slideU'
+      ? { slide: [number, mate.slide[1]] }
+      : key === 'slideV'
+        ? { slide: [mate.slide[0], number] }
+        : { [key]: number };
   change(
     `${MATE_FIELDS[key]} ${nameOf(mate.moving.componentId)}`,
     ({ mates }) => ({ mates: mates.map((m) => (m.id === mateId ? { ...m, ...patch } : m)) }),
@@ -564,7 +602,10 @@ export function refitAssembly() {
 // ---- files ---------------------------------------------------------------------------
 
 function fileName(extension = 'holocad-assembly.json') {
-  const base = get().name.replace(/[^\w.-]+/g, '_').replace(/^_+|_+$/g, '') || 'assembly';
+  const base =
+    get()
+      .name.replace(/[^\w.-]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'assembly';
   return `${base}.${extension}`;
 }
 
@@ -637,7 +678,12 @@ export async function exportAssemblyStep() {
     const parts = designed.map((c) => {
       const { values } = resolveParameters(c.source.design.parameters);
       const { features } = resolveFeatures(c.source.design.features, values);
-      return { name: c.name, color: surfaceOf(appearanceOf(c)).color, features, ...cadTransform(placements[c.id] ?? c) };
+      return {
+        name: c.name,
+        color: surfaceOf(appearanceOf(c)).color,
+        features,
+        ...cadTransform(placements[c.id] ?? c),
+      };
     });
     const { blob, skipped } = await stepOfAssembly(parts);
     const name = fileName('step');

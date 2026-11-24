@@ -13,7 +13,12 @@ export default function GesturePicker() {
   const left = Math.min(window.innerWidth - WIDTH - 16, Math.max(16, picker.x - WIDTH / 2));
   const top = Math.min(window.innerHeight - height - 16, Math.max(16, picker.y - 22));
   return (
-    <div className="hud-panel gesture-picker" style={{ left, top, width: WIDTH, maxHeight: height }} role="listbox" aria-label={picker.label}>
+    <div
+      className="hud-panel gesture-picker"
+      style={{ left, top, width: WIDTH, maxHeight: height }}
+      role="listbox"
+      aria-label={picker.label}
+    >
       <div className="gesture-picker-header">
         <span>{picker.label || 'CHOOSE'}</span>
         <button type="button" onClick={closeGesturePicker} aria-label="Close">

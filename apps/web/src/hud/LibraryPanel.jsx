@@ -81,7 +81,12 @@ function UploadRow({ upload }) {
         )}
       </div>
       {upload.error && (
-        <button type="button" className="library-delete" onClick={() => library.dismissUpload(upload.key)} aria-label="Dismiss">
+        <button
+          type="button"
+          className="library-delete"
+          onClick={() => library.dismissUpload(upload.key)}
+          aria-label="Dismiss"
+        >
           ✕
         </button>
       )}
@@ -108,11 +113,19 @@ export default function LibraryPanel() {
     <div className="hud-panel hud-library">
       <div className="hud-panel-title library-title">
         <span>LIBRARY</span>
-        <span className={`library-api api-${apiStatus}`}>{online ? 'API ONLINE' : apiStatus === 'offline' ? 'API OFFLINE' : '…'}</span>
+        <span className={`library-api api-${apiStatus}`}>
+          {online ? 'API ONLINE' : apiStatus === 'offline' ? 'API OFFLINE' : '…'}
+        </span>
       </div>
 
       <div className="library-upload">
-        <button type="button" className="hud-toggle" disabled={!online} onClick={() => fileInput.current.click()} title="Upload a .step, .stp or .glb file (or drop it on the window)">
+        <button
+          type="button"
+          className="hud-toggle"
+          disabled={!online}
+          onClick={() => fileInput.current.click()}
+          title="Upload a .step, .stp or .glb file (or drop it on the window)"
+        >
           <span>+ UPLOAD</span>
         </button>
         <select
@@ -140,13 +153,15 @@ export default function LibraryPanel() {
       {!online && apiStatus === 'offline' && (
         <div className="library-offline">
           Uploads need the API. Run <code>npm run dev</code>, and <code>npm run db:start</code> for the database.
-          <button type="button" onClick={library.refreshLibrary}>RETRY</button>
+          <button type="button" onClick={library.refreshLibrary}>
+            RETRY
+          </button>
         </div>
       )}
       {online && waitingOnConverter && (
         <div className="library-offline">
-          The STEP converter isn&apos;t running, so queued models are waiting. Start it with{' '}
-          <code>npm run dev</code> (or <code>npm run dev:converter</code>); they&apos;ll convert automatically.
+          The STEP converter isn&apos;t running, so queued models are waiting. Start it with <code>npm run dev</code>{' '}
+          (or <code>npm run dev:converter</code>); they&apos;ll convert automatically.
         </div>
       )}
 

@@ -47,7 +47,11 @@ def block(tmp_path_factory):
         explorer.Next()
     for index, rgb in ((1, (1, 0, 0)), (3, (0, 1, 0))):
         sub = shapes.AddSubShape(label, faces[index])
-        colors.SetColor(sub, Quantity_Color(*rgb, Quantity_TypeOfColor.Quantity_TOC_sRGB), XCAFDoc_ColorType.XCAFDoc_ColorSurf)
+        colors.SetColor(
+            sub,
+            Quantity_Color(*rgb, Quantity_TypeOfColor.Quantity_TOC_sRGB),
+            XCAFDoc_ColorType.XCAFDoc_ColorSurf,
+        )
     writer = STEPCAFControl_Writer()
     writer.SetColorMode(True)
     writer.SetNameMode(True)
@@ -78,7 +82,9 @@ def _triangles(glb_path, gltf, mesh_index):
     for primitive in gltf["meshes"][mesh_index]["primitives"]:
         positions = read(primitive["attributes"]["POSITION"])
         indices = [i[0] for i in read(primitive["indices"])]
-        out.append([[positions[indices[t + k]] for k in range(3)] for t in range(0, len(indices), 3)])
+        out.append(
+            [[positions[indices[t + k]] for k in range(3)] for t in range(0, len(indices), 3)]
+        )
     return out
 
 
@@ -117,7 +123,7 @@ def test_each_face_range_lies_on_that_face(block):
         triangles = primitives[primitive][first : first + count]
         assert triangles
         # Every triangle centre is on one and the same CAD face, of the reported type.
-        centres = [_cad_point([sum(c) / 3 for c in zip(*t)]) for t in triangles]
+        centres = [_cad_point([sum(c) / 3 for c in zip(*t, strict=True)]) for t in triangles]
 
         def distance(face_shape, point):
             vertex = BRepBuilderAPI_MakeVertex(point).Vertex()

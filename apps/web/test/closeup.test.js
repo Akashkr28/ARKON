@@ -16,7 +16,7 @@ describe('scale bar', () => {
   it('converts pixels to real metres at a depth', () => {
     const viewHeight = 2 * 5 * Math.tan((VIEW.cameraFov * Math.PI) / 360);
     const mpp = metresPerPixel({ depth: 5, scale: 10, metresPerSceneUnit: 2, viewportHeight: 800 });
-    expect(mpp).toBeCloseTo((viewHeight / 800) * 2 / 10);
+    expect(mpp).toBeCloseTo(((viewHeight / 800) * 2) / 10);
   });
 
   it('picks a round length in the chosen unit', () => {

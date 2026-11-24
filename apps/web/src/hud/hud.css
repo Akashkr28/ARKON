@@ -754,11 +754,7 @@ kbd {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(46, 230, 255, 0.035) 0 1px,
-    transparent 1px 3px
-  );
+  background: repeating-linear-gradient(to bottom, rgba(46, 230, 255, 0.035) 0 1px, transparent 1px 3px);
 }
 
 /* Corner brackets on every panel. */
@@ -814,7 +810,10 @@ kbd {
 
 .legend-entry {
   opacity: 0.55;
-  transition: opacity 120ms, color 120ms, text-shadow 120ms;
+  transition:
+    opacity 120ms,
+    color 120ms,
+    text-shadow 120ms;
 }
 
 .legend-entry.is-active {
@@ -929,7 +928,9 @@ kbd {
   background: rgba(2, 16, 24, 0.8);
   border: 1px solid rgba(46, 230, 255, 0.5);
   border-radius: 3px;
-  transition: background 80ms, color 80ms;
+  transition:
+    background 80ms,
+    color 80ms;
 }
 
 .radial-menu-item.is-active {
@@ -1631,7 +1632,12 @@ body.is-dragging-handle .scene {
   /* the held-pinch sweep toward the menu */
   background: conic-gradient(rgba(255, 225, 79, 0.75) calc(var(--hold, 0) * 360deg), transparent 0);
   opacity: 0.85;
-  transition: width 80ms, height 80ms, top 80ms, left 80ms, background-color 80ms;
+  transition:
+    width 80ms,
+    height 80ms,
+    top 80ms,
+    left 80ms,
+    background-color 80ms;
 }
 
 .hand-cursor.hand-left {

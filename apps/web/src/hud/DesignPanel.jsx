@@ -137,7 +137,12 @@ function FeatureRow({ feature, resolved, index, count, selected, error }) {
       </span>
       {!base && (
         <span className="design-feature-buttons">
-          <button type="button" disabled={index <= 1} onClick={(e) => (e.stopPropagation(), moveFeature(feature.id, -1))} aria-label="Move up">
+          <button
+            type="button"
+            disabled={index <= 1}
+            onClick={(e) => (e.stopPropagation(), moveFeature(feature.id, -1))}
+            aria-label="Move up"
+          >
             ▲
           </button>
           <button
@@ -148,7 +153,11 @@ function FeatureRow({ feature, resolved, index, count, selected, error }) {
           >
             ▼
           </button>
-          <button type="button" onClick={(e) => (e.stopPropagation(), removeFeature(feature.id))} aria-label={`Delete ${FEATURE_TYPES[feature.type].label}`}>
+          <button
+            type="button"
+            onClick={(e) => (e.stopPropagation(), removeFeature(feature.id))}
+            aria-label={`Delete ${FEATURE_TYPES[feature.type].label}`}
+          >
             ✕
           </button>
         </span>
@@ -162,7 +171,12 @@ function ParametersTable({ parameters, values, errors }) {
     <div className="design-parameters" aria-label="Parameters">
       {parameters.map((p) => (
         <div key={p.id} className={`design-parameter${errors[p.id] ? ' has-error' : ''}`}>
-          <TextField value={p.name} label="Parameter name" className="design-param-name" onCommit={(v) => renameParameter(p.id, v)} />
+          <TextField
+            value={p.name}
+            label="Parameter name"
+            className="design-param-name"
+            onCommit={(v) => renameParameter(p.id, v)}
+          />
           <span>=</span>
           <TextField
             value={p.expression}
@@ -226,7 +240,11 @@ function Properties({ properties, appearance }) {
         <dd>{formatArea(properties.surfaceAreaMm2, unit)}</dd>
         <dt>FACES</dt>
         <dd>
-          {properties.faces} ({Object.entries(properties.faceTypes).map(([t, n]) => `${n} ${t}`).join(', ')})
+          {properties.faces} (
+          {Object.entries(properties.faceTypes)
+            .map(([t, n]) => `${n} ${t}`)
+            .join(', ')}
+          )
         </dd>
         <dt>MASS</dt>
         <dd>
@@ -298,11 +316,7 @@ export default function DesignPanel() {
         ))}
       </div>
       <div className="design-add">
-        <select
-          value=""
-          onChange={(e) => e.target.value && addFeature(e.target.value)}
-          aria-label="Add feature"
-        >
+        <select value="" onChange={(e) => e.target.value && addFeature(e.target.value)} aria-label="Add feature">
           <option value="">+ Add feature…</option>
           {OPERATION_TYPES.map((type) => (
             <option key={type} value={type}>
@@ -344,10 +358,20 @@ export default function DesignPanel() {
 
       <div className="spec-section">SAVE</div>
       <div className="design-actions">
-        <button type="button" onClick={exportDesignStep} disabled={!d.part || d.saving} title="Download as STEP (opens in any CAD program)">
+        <button
+          type="button"
+          onClick={exportDesignStep}
+          disabled={!d.part || d.saving}
+          title="Download as STEP (opens in any CAD program)"
+        >
           {d.saving === 'step' ? 'STEP…' : 'EXPORT STEP'}
         </button>
-        <button type="button" onClick={exportDesignGlb} disabled={!d.part || d.saving} title="The part as shown, with its colour and finish (.glb)">
+        <button
+          type="button"
+          onClick={exportDesignGlb}
+          disabled={!d.part || d.saving}
+          title="The part as shown, with its colour and finish (.glb)"
+        >
           {d.saving === 'glb' ? 'GLB…' : 'EXPORT GLB'}
         </button>
         <button

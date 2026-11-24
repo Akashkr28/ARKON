@@ -19,8 +19,8 @@ from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GCPnts import GCPnts_AbscissaPoint, GCPnts_QuasiUniformDeflection
 from OCP.GeomAbs import GeomAbs_CurveType, GeomAbs_SurfaceType
-from OCP.GProp import GProp_GProps
 from OCP.gp import gp_Vec
+from OCP.GProp import GProp_GProps
 from OCP.RWMesh import RWMesh_FaceIterator
 from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_Orientation
 from OCP.TopExp import TopExp_Explorer
@@ -74,10 +74,17 @@ def describe_face(face) -> dict:
         info["normal"] = _viewer_direction(normal)
     elif kind == GeomAbs_SurfaceType.GeomAbs_Cylinder:
         radius, _foot, _dir, span, (lo, hi), concave = _cylinder_face(face)
-        info.update(radius=_round(radius), concave=concave, sweep=_round(math.degrees(span), 1), length=_round(hi - lo))
+        info.update(
+            radius=_round(radius),
+            concave=concave,
+            sweep=_round(math.degrees(span), 1),
+            length=_round(hi - lo),
+        )
     elif kind == GeomAbs_SurfaceType.GeomAbs_Cone:
         cone = surface.Cone()
-        info.update(radius=_round(cone.RefRadius()), half_angle=_round(math.degrees(cone.SemiAngle()), 2))
+        info.update(
+            radius=_round(cone.RefRadius()), half_angle=_round(math.degrees(cone.SemiAngle()), 2)
+        )
     elif kind == GeomAbs_SurfaceType.GeomAbs_Sphere:
         info["radius"] = _round(surface.Sphere().Radius())
     elif kind == GeomAbs_SurfaceType.GeomAbs_Torus:
@@ -193,7 +200,12 @@ def part_faces(doc, parts: list[dict], deflection: float) -> dict:
         part_products.append(product_index[key])
 
     return {
-        "units": {"length": "mm", "area": "mm2", "angle": "deg", "points": "m (part's node frame, Y up)"},
+        "units": {
+            "length": "mm",
+            "area": "mm2",
+            "angle": "deg",
+            "points": "m (part's node frame, Y up)",
+        },
         "products": products,
         "parts": part_products,  # by part (spec) index → products index, or null
     }

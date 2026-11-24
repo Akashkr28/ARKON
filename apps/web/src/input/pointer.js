@@ -75,7 +75,11 @@ function onPointerDown(event) {
   } else if (pointers.size === 1) {
     // Designing: grabbing a handle shapes the part instead of turning the view.
     // Assembling: grabbing a part moves it (and a click without moving selects it).
-    if ((designing() || (assembling() && !event.shiftKey)) && event.button === 0 && beginHandleDrag(event.clientX, event.clientY)) {
+    if (
+      (designing() || (assembling() && !event.shiftKey)) &&
+      event.button === 0 &&
+      beginHandleDrag(event.clientX, event.clientY)
+    ) {
       gesture = { mode: 'handle', dragged: designing() };
       document.body.classList.add('is-dragging-handle');
       return;

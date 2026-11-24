@@ -176,9 +176,16 @@ function InspectedSection({ part, unit }) {
   return (
     <>
       <div className="spec-section">
-        {item ? `PICKED ${item.kind.toUpperCase()} · ${item.index + 1} OF ${item.kind === 'edge' ? product.edges.length : product.faces.length}` : 'FACES & EDGES'}
+        {item
+          ? `PICKED ${item.kind.toUpperCase()} · ${item.index + 1} OF ${item.kind === 'edge' ? product.edges.length : product.faces.length}`
+          : 'FACES & EDGES'}
         {item && (
-          <button type="button" className="spec-unpin" onClick={() => pinInspected(null)} aria-label="Clear picked face or edge">
+          <button
+            type="button"
+            className="spec-unpin"
+            onClick={() => pinInspected(null)}
+            aria-label="Clear picked face or edge"
+          >
             ✕
           </button>
         )}
@@ -243,7 +250,10 @@ export default function SpecSheet() {
   let body;
   if (status === 'loading') body = <div className="spec-empty">Loading part specs…</div>;
   else if (status === 'error') body = <div className="spec-empty library-error">{error}</div>;
-  else if (!last) body = <div className="spec-empty">Select a part (click it, or pick it in PARTS) to see its full specification.</div>;
+  else if (!last)
+    body = (
+      <div className="spec-empty">Select a part (click it, or pick it in PARTS) to see its full specification.</div>
+    );
   else if (entries.length > 1) body = <SelectionSheet entries={entries} unit={unit} />;
   else if (last.spec) body = <PartSheet part={last.part} spec={last.spec} unit={unit} picks={picks} />;
   else {
@@ -254,8 +264,8 @@ export default function SpecSheet() {
           <Row label="SIZE">{formatSize(last.part.size, unit)}</Row>
         </dl>
         <div className="spec-empty">
-          No CAD data for this model: GLB files carry only triangles. Upload the STEP file for exact
-          dimensions, mass and features.
+          No CAD data for this model: GLB files carry only triangles. Upload the STEP file for exact dimensions, mass
+          and features.
         </div>
       </>
     );

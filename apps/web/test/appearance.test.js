@@ -16,13 +16,23 @@ describe('appearance', () => {
       finish: 'satin',
     });
     // A model's paint has no material.
-    expect(normaliseAppearance({ color: '#00ff00' }, { allowNoMaterial: true })).toMatchObject({ materialId: null, color: '#00ff00' });
+    expect(normaliseAppearance({ color: '#00ff00' }, { allowNoMaterial: true })).toMatchObject({
+      materialId: null,
+      color: '#00ff00',
+    });
     expect(normaliseAppearance(null, { allowNoMaterial: true })).toBe(null);
   });
 
-  it("looks like its material unless coloured; metals shine, glass is see-through", () => {
-    expect(surfaceOf({ materialId: 'brass', color: null, finish: 'polished' })).toMatchObject({ color: '#c9a441', metalness: 0.5, roughness: 0.18 });
-    expect(surfaceOf({ materialId: 'abs', color: '#123456', finish: 'matte' })).toMatchObject({ color: '#123456', metalness: 0.05 });
+  it('looks like its material unless coloured; metals shine, glass is see-through', () => {
+    expect(surfaceOf({ materialId: 'brass', color: null, finish: 'polished' })).toMatchObject({
+      color: '#c9a441',
+      metalness: 0.5,
+      roughness: 0.18,
+    });
+    expect(surfaceOf({ materialId: 'abs', color: '#123456', finish: 'matte' })).toMatchObject({
+      color: '#123456',
+      metalness: 0.05,
+    });
     expect(surfaceOf({ materialId: 'glass', finish: 'matte' }).opacity).toBeLessThan(1);
     expect(describeAppearance({ materialId: 'brass', color: null, finish: 'polished' })).toBe('Brass · polished');
     expect(describeAppearance(null)).toBe('as in the CAD file');
@@ -32,12 +42,22 @@ describe('appearance', () => {
 describe('assembly BOM', () => {
   const design = (materialId) => ({
     kind: 'design',
-    design: { name: 'Pin', parameters: [], features: [{ type: 'cylinder', params: { diameter: 8, height: 30 } }], appearance: { materialId, color: null, finish: 'satin' } },
+    design: {
+      name: 'Pin',
+      parameters: [],
+      features: [{ type: 'cylinder', params: { diameter: 8, height: 30 } }],
+      appearance: { materialId, color: null, finish: 'satin' },
+    },
   });
   const components = [
     { id: 'a', name: 'Pin', source: design('steel') },
     { id: 'b', name: 'Pin 2', source: design('steel') },
-    { id: 'c', name: 'Pin 3', source: design('steel'), appearance: { materialId: 'brass', color: null, finish: 'satin' } },
+    {
+      id: 'c',
+      name: 'Pin 3',
+      source: design('steel'),
+      appearance: { materialId: 'brass', color: null, finish: 'satin' },
+    },
     { id: 'd', name: 'Aster C1', source: { kind: 'model', modelId: 'aster' } },
   ];
   const info = {

@@ -96,7 +96,9 @@ function ControlPanel() {
       </label>
 
       <label className="hud-field">
-        <span>CAMERA <kbd>C</kbd></span>
+        <span>
+          CAMERA <kbd>C</kbd>
+        </span>
         <select
           value={s.activeCameraId ?? ''}
           onChange={(e) => actions.selectCamera(e.target.value)}
@@ -146,7 +148,12 @@ function StatusLine() {
   }
 
   if (designing) {
-    const size = designSize ? ` · ${formatSize(designSize.map((mm) => mm / 1000), unit).toUpperCase()}` : '';
+    const size = designSize
+      ? ` · ${formatSize(
+          designSize.map((mm) => mm / 1000),
+          unit,
+        ).toUpperCase()}`
+      : '';
     return (
       <div className="hud-panel hud-status">
         DESIGN · {designName.toUpperCase()}
@@ -219,10 +226,24 @@ function RightPanel() {
             {label}
           </button>
         ))}
-        <button type="button" role="tab" aria-selected={false} className="hud-tab hud-tab-design" onClick={openDesign} title="Make your own part">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={false}
+          className="hud-tab hud-tab-design"
+          onClick={openDesign}
+          title="Make your own part"
+        >
           DESIGN
         </button>
-        <button type="button" role="tab" aria-selected={false} className="hud-tab hud-tab-design" onClick={openAssembly} title="Put parts together">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={false}
+          className="hud-tab hud-tab-design"
+          onClick={openAssembly}
+          title="Put parts together"
+        >
           ASSEMBLE
         </button>
       </div>

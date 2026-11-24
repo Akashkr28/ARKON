@@ -22,7 +22,9 @@ def test_part_count_and_real_names(car):
     names = [p["name"] for p in car.parts]
     # No OCCT placeholders like "=>[0:1:1:3]" leak into labels.
     assert not [n for n in names if "=>" in n]
-    assert {"Windshield", "Hood", "Engine block", "Gearbox", "Driver seat", "Brake disc"} <= set(names)
+    assert {"Windshield", "Hood", "Engine block", "Gearbox", "Driver seat", "Brake disc"} <= set(
+        names
+    )
 
 
 def test_product_structure(car):
@@ -34,7 +36,11 @@ def test_product_structure(car):
 
 def test_placed_instances_keep_their_own_names(car):
     names = [p["name"] for p in car.parts]
-    for pair in (("Left frame rail", "Right frame rail"), ("Left mirror", "Right mirror"), ("Driver seat", "Passenger seat")):
+    for pair in (
+        ("Left frame rail", "Right frame rail"),
+        ("Left mirror", "Right mirror"),
+        ("Driver seat", "Passenger seat"),
+    ):
         assert all(names.count(n) == 1 for n in pair)
     assert names.count("Lug nut 5") == 4
 
@@ -59,7 +65,9 @@ def test_every_part_has_measured_specs_and_a_material(car):
     assert all(s["mass_kg"] for s in specs.values())
     block = specs["Engine block"]
     assert block["material"]["name"] == "Aluminium A356 cast"
-    assert block["features"]["holes"] == [{"diameter": 80.0, "depth": 250.0, "count": 4}]  # cylinder bores
+    assert block["features"]["holes"] == [
+        {"diameter": 80.0, "depth": 250.0, "count": 4}
+    ]  # cylinder bores
     disc = specs["Brake disc"]
     assert disc["overall_size_mm"] == pytest.approx([320, 320, 26], abs=0.01)
     assert disc["features"]["holes"] == [{"diameter": 120.0, "depth": 26.0, "count": 1}]

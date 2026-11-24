@@ -151,10 +151,20 @@ function PartRow({ component, mate, targetName, status, selected }) {
         {status?.status === 'ready' && <span className="spec-muted">{look}</span>}
       </div>
       <div className="design-feature-buttons" onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={() => duplicateComponent(component.id)} title="Add another one" aria-label={`Duplicate ${component.name}`}>
+        <button
+          type="button"
+          onClick={() => duplicateComponent(component.id)}
+          title="Add another one"
+          aria-label={`Duplicate ${component.name}`}
+        >
           ⧉
         </button>
-        <button type="button" onClick={() => removeComponent(component.id)} title="Delete" aria-label={`Delete ${component.name}`}>
+        <button
+          type="button"
+          onClick={() => removeComponent(component.id)}
+          title="Delete"
+          aria-label={`Delete ${component.name}`}
+        >
           ✕
         </button>
       </div>
@@ -178,7 +188,12 @@ function TurnButtons({ id, mated }) {
   return (
     <div className="design-actions">
       {['x', 'y', 'z'].map((axis) => (
-        <button key={axis} type="button" onClick={() => turnComponent(id, axis, 90)} title={`Turn a quarter about ${axis.toUpperCase()}`}>
+        <button
+          key={axis}
+          type="button"
+          onClick={() => turnComponent(id, axis, 90)}
+          title={`Turn a quarter about ${axis.toUpperCase()}`}
+        >
           ⟲ {axis.toUpperCase()} 90°
         </button>
       ))}
@@ -202,22 +217,38 @@ function SelectedPart({ component, mate, targetName, placement }) {
       {mate ? (
         <>
           <div className="spec-muted">
-            {MATE_TYPES[mate.type].label}: {mate.moving.label.split(' · ').at(-1)} on {targetName}’s {mate.target.label.split(' · ').at(-1)}.
-            Drag it to slide.
+            {MATE_TYPES[mate.type].label}: {mate.moving.label.split(' · ').at(-1)} on {targetName}’s{' '}
+            {mate.target.label.split(' · ').at(-1)}. Drag it to slide.
           </div>
           {mate.type === 'contact' ? (
             <>
-              <NumberField label="Slide across" value={mate.slide[0]} onCommit={(v) => setMateValue(mate.id, 'slideU', v)} />
-              <NumberField label="Slide along" value={mate.slide[1]} onCommit={(v) => setMateValue(mate.id, 'slideV', v)} />
+              <NumberField
+                label="Slide across"
+                value={mate.slide[0]}
+                onCommit={(v) => setMateValue(mate.id, 'slideU', v)}
+              />
+              <NumberField
+                label="Slide along"
+                value={mate.slide[1]}
+                onCommit={(v) => setMateValue(mate.id, 'slideV', v)}
+              />
               <NumberField label="Gap" value={mate.gap} onCommit={(v) => setMateValue(mate.id, 'gap', v)} />
             </>
           ) : (
-            <NumberField label="Slide along axis" value={mate.slide} onCommit={(v) => setMateValue(mate.id, 'slide', v)} />
+            <NumberField
+              label="Slide along axis"
+              value={mate.slide}
+              onCommit={(v) => setMateValue(mate.id, 'slide', v)}
+            />
           )}
           <NumberField label="Angle" value={mate.angle} unit="°" onCommit={(v) => setMateValue(mate.id, 'angle', v)} />
           <TurnButtons id={component.id} mated />
           <div className="design-actions">
-            <button type="button" onClick={() => flipMate(mate.id)} title="Turn it over (face to face ⇄ facing the same way)">
+            <button
+              type="button"
+              onClick={() => flipMate(mate.id)}
+              title="Turn it over (face to face ⇄ facing the same way)"
+            >
               FLIP
             </button>
             <button type="button" onClick={() => removeMate(mate.id)} title="Detach it; it stays where it is">
@@ -284,7 +315,9 @@ function AssemblyProperties({ content }) {
       <dt>MASS</dt>
       <dd>
         <span className="spec-strong">{bom.totals.massKg == null ? '—' : formatMass(bom.totals.massKg, unit)}</span>
-        {bom.totals.partsWithoutMass > 0 && <span className="spec-muted"> · {bom.totals.partsWithoutMass} without a known mass</span>}
+        {bom.totals.partsWithoutMass > 0 && (
+          <span className="spec-muted"> · {bom.totals.partsWithoutMass} without a known mass</span>
+        )}
         {loading && <span className="spec-muted"> · loading…</span>}
       </dd>
       {bom.rows.map((row) => (
@@ -333,7 +366,12 @@ export default function AssemblyPanel() {
   return (
     <div className="hud-panel hud-design" aria-label="Assembly">
       <div className="design-header">
-        <input className="design-name" value={a.name} onChange={(e) => renameAssembly(e.target.value)} aria-label="Assembly name" />
+        <input
+          className="design-name"
+          value={a.name}
+          onChange={(e) => renameAssembly(e.target.value)}
+          aria-label="Assembly name"
+        />
         <button type="button" onClick={closeAssembly} title="Back to the model viewer">
           ◂ VIEWER
         </button>
@@ -412,7 +450,12 @@ export default function AssemblyPanel() {
       {a.mates.length > 0 && (
         <div className="design-features" role="list" aria-label="Mates">
           {a.mates.map((mate) => (
-            <div key={mate.id} className="design-feature" role="listitem" onClick={() => selectComponent(mate.moving.componentId)}>
+            <div
+              key={mate.id}
+              className="design-feature"
+              role="listitem"
+              onClick={() => selectComponent(mate.moving.componentId)}
+            >
               <div className="design-feature-text">
                 <strong>
                   {nameOf(mate.moving.componentId)} → {nameOf(mate.target.componentId)}
@@ -420,7 +463,12 @@ export default function AssemblyPanel() {
                 <span>{MATE_TYPES[mate.type].label}</span>
               </div>
               <div className="design-feature-buttons" onClick={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => removeMate(mate.id)} title="Unmate" aria-label={`Unmate ${nameOf(mate.moving.componentId)}`}>
+                <button
+                  type="button"
+                  onClick={() => removeMate(mate.id)}
+                  title="Unmate"
+                  aria-label={`Unmate ${nameOf(mate.moving.componentId)}`}
+                >
                   ✕
                 </button>
               </div>
@@ -438,7 +486,12 @@ export default function AssemblyPanel() {
 
       <div className="spec-section">EXPORT</div>
       <div className="design-actions">
-        <button type="button" onClick={exportAssemblyGlb} disabled={!a.components.length || saving} title="Everything, placed and coloured (.glb)">
+        <button
+          type="button"
+          onClick={exportAssemblyGlb}
+          disabled={!a.components.length || saving}
+          title="Everything, placed and coloured (.glb)"
+        >
           {saving === 'glb' ? 'GLB…' : 'EXPORT GLB'}
         </button>
         <button
@@ -449,10 +502,20 @@ export default function AssemblyPanel() {
         >
           {saving === 'step' ? 'STEP…' : 'EXPORT STEP'}
         </button>
-        <button type="button" onClick={exportAssemblyBomCsv} disabled={!a.components.length} title="Bill of materials (.csv)">
+        <button
+          type="button"
+          onClick={exportAssemblyBomCsv}
+          disabled={!a.components.length}
+          title="Bill of materials (.csv)"
+        >
           BOM CSV
         </button>
-        <button type="button" onClick={saveAssemblyToLibrary} disabled={!a.components.length || saving} title="Open it in the viewer like any model">
+        <button
+          type="button"
+          onClick={saveAssemblyToLibrary}
+          disabled={!a.components.length || saving}
+          title="Open it in the viewer like any model"
+        >
           {saving === 'library' ? 'SAVING…' : 'SAVE TO LIBRARY'}
         </button>
       </div>

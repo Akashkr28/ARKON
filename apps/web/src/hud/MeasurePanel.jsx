@@ -12,7 +12,10 @@ function MeasurementRow({ measurement, index, unit }) {
   const { type, value, deltas, exploded } = measurement;
   return (
     <li className="measure-row">
-      <span className="measure-index">{type === 'distance' ? 'D' : 'A'}{index + 1}</span>
+      <span className="measure-index">
+        {type === 'distance' ? 'D' : 'A'}
+        {index + 1}
+      </span>
       <span className="measure-value">
         {type === 'distance' ? formatLength(value, unit, { precise: true }) : `${value.toFixed(1)}°`}
         {deltas && (
@@ -20,7 +23,11 @@ function MeasurementRow({ measurement, index, unit }) {
             Δ {deltas.map((d) => formatLength(d, unit, { precise: true }).split(' ')[0]).join(' / ')}
           </span>
         )}
-        {exploded && <span className="measure-warn" title="Taken on the exploded model">EXPLODED</span>}
+        {exploded && (
+          <span className="measure-warn" title="Taken on the exploded model">
+            EXPLODED
+          </span>
+        )}
       </span>
       <button type="button" onClick={() => deleteMeasurement(measurement.id)} aria-label="Delete measurement">
         ✕

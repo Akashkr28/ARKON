@@ -142,7 +142,16 @@ export function fitFace(points, normals) {
   const [smallest] = symmetricEigen(scatter);
   const axis = v3(smallest.vector).normalize();
   let worst = 0;
-  for (let i = 0; i < count; i += 1) worst = Math.max(worst, Math.abs(n.fromArray(normals, i * 3).normalize().dot(axis)));
+  for (let i = 0; i < count; i += 1)
+    worst = Math.max(
+      worst,
+      Math.abs(
+        n
+          .fromArray(normals, i * 3)
+          .normalize()
+          .dot(axis),
+      ),
+    );
   if (worst > AXIS_TOLERANCE) {
     // Neither flat nor round (a sphere, a freeform patch): treat it as the plane it
     // faces on average, which is what face-to-face needs.
@@ -174,7 +183,24 @@ export function fitFace(points, normals) {
     sums.z += z;
   }
   // [uu uw u; uw ww w; u w n] [A B C]ᵀ = [uz wz z]ᵀ, circle x² + y² = A x + B y + C.
-  const m = new Matrix4().set(sums.uu, sums.uw, sums.u, 0, sums.uw, sums.ww, sums.w, 0, sums.u, sums.w, sums.n, 0, 0, 0, 0, 1);
+  const m = new Matrix4().set(
+    sums.uu,
+    sums.uw,
+    sums.u,
+    0,
+    sums.uw,
+    sums.ww,
+    sums.w,
+    0,
+    sums.u,
+    sums.w,
+    sums.n,
+    0,
+    0,
+    0,
+    0,
+    1,
+  );
   if (Math.abs(m.determinant()) < 1e-30) return null;
   const solved = new Vector3(sums.uz, sums.wz, sums.z).applyMatrix4(m.invert());
   const cu = solved.x / 2;
@@ -184,7 +210,13 @@ export function fitFace(points, normals) {
     .addScaledVector(u, cu)
     .addScaledVector(w, cw)
     .addScaledVector(axis, (minAlong + maxAlong) / 2);
-  return { type: 'cylinder', point: arr(centre), axis: arr(axis), radius: round(radius), length: round(maxAlong - minAlong) };
+  return {
+    type: 'cylinder',
+    point: arr(centre),
+    axis: arr(axis),
+    radius: round(radius),
+    length: round(maxAlong - minAlong),
+  };
 }
 
 // A face's corners and normals in the part's own frame, ready for fitFace. `toPart`
@@ -201,7 +233,9 @@ export function faceTriangles(geometry, firstTriangle, triangleCount, toPart) {
     for (let corner = 0; corner < 3; corner += 1) {
       const slot = (firstTriangle + t) * 3 + corner;
       const vertex = index ? index.getX(slot) : slot;
-      p.fromBufferAttribute(position, vertex).applyMatrix4(toPart).toArray(points, (t * 3 + corner) * 3);
+      p.fromBufferAttribute(position, vertex)
+        .applyMatrix4(toPart)
+        .toArray(points, (t * 3 + corner) * 3);
       if (normal) p.fromBufferAttribute(normal, vertex).applyMatrix4(normalMatrix).normalize();
       else p.set(0, 0, 0);
       p.toArray(normals, (t * 3 + corner) * 3);
@@ -236,8 +270,10 @@ const quat = (q) => new Quaternion().fromArray(q);
 const place = (position, quaternion) => ({ position: arr(position), quaternion: arr(quaternion.normalize()) });
 
 // A point / direction of a part, in the assembly's frame.
-export const pointToWorld = (placement, point) => v3(point).applyQuaternion(quat(placement.quaternion)).add(v3(placement.position));
-export const directionToWorld = (placement, direction) => v3(direction).applyQuaternion(quat(placement.quaternion)).normalize();
+export const pointToWorld = (placement, point) =>
+  v3(point).applyQuaternion(quat(placement.quaternion)).add(v3(placement.position));
+export const directionToWorld = (placement, direction) =>
+  v3(direction).applyQuaternion(quat(placement.quaternion)).normalize();
 
 // The face's frame on its part: a point, the direction that matters (normal or axis),
 // and two directions across it.
@@ -377,7 +413,13 @@ export function dragFrame(mate, targetPlacement, grabPoint, viewDirection) {
   if (!mate) return { kind: 'free', point: grabPoint, normal: viewDirection };
   const frame = faceFrame(mate.target.geometry, targetPlacement);
   if (mate.type === 'contact') {
-    return { kind: 'contact', point: frame.point.toArray(), normal: frame.dir.toArray(), u: frame.u.toArray(), w: frame.w.toArray() };
+    return {
+      kind: 'contact',
+      point: frame.point.toArray(),
+      normal: frame.dir.toArray(),
+      u: frame.u.toArray(),
+      w: frame.w.toArray(),
+    };
   }
   return { kind: 'axis', point: frame.point.toArray(), dir: frame.dir.toArray() };
 }
@@ -402,7 +444,9 @@ export const snapMm = (mm, fine = false) => {
 
 // Turn a free part by `degrees` about one of the assembly's axes (through its own origin).
 export function turned(placement, axis, degrees) {
-  const q = new Quaternion().setFromAxisAngle(v3(axis).normalize(), (degrees * Math.PI) / 180).multiply(quat(placement.quaternion));
+  const q = new Quaternion()
+    .setFromAxisAngle(v3(axis).normalize(), (degrees * Math.PI) / 180)
+    .multiply(quat(placement.quaternion));
   return place(v3(placement.position), q);
 }
 
@@ -420,7 +464,8 @@ export function flippedRelative(mate) {
 export function placedBounds(box, placement) {
   const corners = [];
   for (const x of [box.min[0], box.max[0]])
-    for (const y of [box.min[1], box.max[1]]) for (const z of [box.min[2], box.max[2]]) corners.push(pointToWorld(placement, [x, y, z]));
+    for (const y of [box.min[1], box.max[1]])
+      for (const z of [box.min[2], box.max[2]]) corners.push(pointToWorld(placement, [x, y, z]));
   const min = [0, 1, 2].map((k) => Math.min(...corners.map((c) => c.getComponent(k))));
   const max = [0, 1, 2].map((k) => Math.max(...corners.map((c) => c.getComponent(k))));
   return { min, max };

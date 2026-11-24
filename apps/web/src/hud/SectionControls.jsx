@@ -8,7 +8,12 @@ const AXIS_HINT = { x: 'left–right', y: 'top–bottom', z: 'front–back' };
 
 export default function SectionControls() {
   const { section, bounds, showPlane, unit } = useViewerStore(
-    useShallow((s) => ({ section: s.section, bounds: s.modelBounds, showPlane: s.showSectionPlane, unit: s.lengthUnit })),
+    useShallow((s) => ({
+      section: s.section,
+      bounds: s.modelBounds,
+      showPlane: s.showSectionPlane,
+      unit: s.lengthUnit,
+    })),
   );
 
   return (

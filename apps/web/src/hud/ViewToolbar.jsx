@@ -1,5 +1,12 @@
 import { useViewerStore } from '../store/viewerStore';
-import { fitToSelection, fitToView, redo as redoView, setLengthUnit, setView, undo as undoView } from '../actions/viewerActions';
+import {
+  fitToSelection,
+  fitToView,
+  redo as redoView,
+  setLengthUnit,
+  setView,
+  undo as undoView,
+} from '../actions/viewerActions';
 import { redoDesign, undoDesign } from '../actions/designActions';
 import { redoAssembly, undoAssembly } from '../actions/assemblyActions';
 import { useAssemblyStore } from '../store/assemblyStore';
@@ -65,7 +72,12 @@ export default function ViewToolbar() {
   return (
     <div className="hud-panel view-toolbar" aria-label="View">
       <UndoRedo />
-      <button type="button" className="view-button view-fit" onClick={fitToView} title="Fit the model to the screen (0)">
+      <button
+        type="button"
+        className="view-button view-fit"
+        onClick={fitToView}
+        title="Fit the model to the screen (0)"
+      >
         FIT <kbd>0</kbd>
       </button>
       <button

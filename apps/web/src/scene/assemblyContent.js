@@ -107,13 +107,18 @@ async function modelContent(modelId) {
 //   massKg / partsWithoutMass (models, from their specs), sizeMm } }
 export async function loadContent(component) {
   const { source } = component;
-  const key = source.kind === 'design' ? JSON.stringify(source.design.features) + JSON.stringify(source.design.parameters) : source.modelId;
+  const key =
+    source.kind === 'design'
+      ? JSON.stringify(source.design.features) + JSON.stringify(source.design.parameters)
+      : source.modelId;
   const cached = objects.get(component.id);
   if (cached?.key === key) return cached;
   const { object, info } =
     source.kind === 'design' ? await designContent(source.design, component.name) : await modelContent(source.modelId);
   const bounds = new Box3().setFromObject(object);
-  const box = bounds.isEmpty() ? { min: [0, 0, 0], max: [0, 0, 0] } : { min: bounds.min.toArray(), max: bounds.max.toArray() };
+  const box = bounds.isEmpty()
+    ? { min: [0, 0, 0], max: [0, 0, 0] }
+    : { min: bounds.min.toArray(), max: bounds.max.toArray() };
   const [sx, sy, sz] = bounds.isEmpty() ? [0, 0, 0] : bounds.getSize(bounds.min.clone()).toArray();
   const sizeMm = info.sizeMm ?? [sx * 1000, sz * 1000, sy * 1000]; // X × Y × Z, Z up
   const entry = { key, object, box, info: { ...info, sizeMm } };

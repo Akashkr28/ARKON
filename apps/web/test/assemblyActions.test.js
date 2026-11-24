@@ -21,11 +21,20 @@ const { pointToWorld } = await import('../src/cad/assembly.js');
 const state = () => useAssemblyStore.getState();
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 const pin = { name: 'Pin', parameters: [], features: [{ type: 'cylinder', params: { diameter: 8, height: 30 } }] };
-const plate = { name: 'Plate', parameters: [], features: [{ type: 'box', params: { length: 120, width: 80, height: 10 } }] };
+const plate = {
+  name: 'Plate',
+  parameters: [],
+  features: [{ type: 'box', params: { length: 120, width: 80, height: 10 } }],
+};
 
 const top = { type: 'plane', point: [0, 0.02, 0], normal: [0, 1, 0] };
 const bottom = { type: 'plane', point: [0, 0, 0], normal: [0, -1, 0] };
-const face = (componentId, geometry) => ({ componentId, geometry, label: `x · ${geometry.type}`, key: `${componentId}${geometry.type}` });
+const face = (componentId, geometry) => ({
+  componentId,
+  geometry,
+  label: `x · ${geometry.type}`,
+  key: `${componentId}${geometry.type}`,
+});
 
 beforeEach(async () => {
   while (actions.undoAssembly());
@@ -145,8 +154,18 @@ describe('assembly files', () => {
         { id: 'c', source: { kind: 'laser' } },
       ],
       mates: [
-        { type: 'contact', moving: { componentId: 'b', geometry: bottom }, target: { componentId: 'a', geometry: top }, relative: [0, 0, 0, 1] },
-        { type: 'contact', moving: { componentId: 'b', geometry: bottom }, target: { componentId: 'zz', geometry: top }, relative: [0, 0, 0, 1] },
+        {
+          type: 'contact',
+          moving: { componentId: 'b', geometry: bottom },
+          target: { componentId: 'a', geometry: top },
+          relative: [0, 0, 0, 1],
+        },
+        {
+          type: 'contact',
+          moving: { componentId: 'b', geometry: bottom },
+          target: { componentId: 'zz', geometry: top },
+          relative: [0, 0, 0, 1],
+        },
       ],
     });
     expect(assembly.name).toBe('Rig');

@@ -37,7 +37,9 @@ export default function AssemblyModel() {
     for (const component of components) applyAppearance(contentOf(component.id)?.object, appearanceOf(component));
   }, [components, contentVersion]);
 
-  return scene ? <LoadedModel scene={scene} frame={frame} overlay={(content) => <AssemblyOverlay content={content} />} /> : null;
+  return scene ? (
+    <LoadedModel scene={scene} frame={frame} overlay={(content) => <AssemblyOverlay content={content} />} />
+  ) : null;
 }
 
 const HIGHLIGHT = { hover: '#ffd23f', pick: '#3fe0ff' };
@@ -196,11 +198,19 @@ function AssemblyOverlay({ content }) {
         [pick, HIGHLIGHT.pick],
       ].map(([face, color]) => {
         const node = face && nodes.get(face.componentId);
-        return node ? <Portal key={color} node={node}><FaceHighlight face={face} color={color} /></Portal> : null;
+        return node ? (
+          <Portal key={color} node={node}>
+            <FaceHighlight face={face} color={color} />
+          </Portal>
+        ) : null;
       })}
       {dragNode && dragBox && (
         <Portal node={dragNode}>
-          <Html position={dragBox.max.map((v, i) => (i === 1 ? v : (v + dragBox.min[i]) / 2))} zIndexRange={[30, 20]} style={{ pointerEvents: 'none' }}>
+          <Html
+            position={dragBox.max.map((v, i) => (i === 1 ? v : (v + dragBox.min[i]) / 2))}
+            zIndexRange={[30, 20]}
+            style={{ pointerEvents: 'none' }}
+          >
             <div className="handle-label">{drag.text}</div>
           </Html>
         </Portal>

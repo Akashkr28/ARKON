@@ -25,7 +25,7 @@ export function rotateXYZ([x, y, z], [ax, ay, az]) {
   const [sx, cx, sy, cy, sz, cz] = [Math.sin(ax), Math.cos(ax), Math.sin(ay), Math.cos(ay), Math.sin(az), Math.cos(az)];
   // Rz
   let x1 = x * cz - y * sz;
-  let y1 = x * sz + y * cz;
+  const y1 = x * sz + y * cz;
   let z1 = z;
   // Ry
   const x2 = x1 * cy + z1 * sy;

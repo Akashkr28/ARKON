@@ -49,7 +49,12 @@ export default function AppearanceEditor({ appearance, onChange, paint = false }
                 aria-label="Colour"
               />
               {!paint && appearance?.color && (
-                <button type="button" className="appearance-reset" onClick={() => onChange({ color: null })} title="Back to the material's own colour">
+                <button
+                  type="button"
+                  className="appearance-reset"
+                  onClick={() => onChange({ color: null })}
+                  title="Back to the material's own colour"
+                >
                   ↺
                 </button>
               )}

@@ -55,9 +55,7 @@ export default function App() {
       <Hud />
 
       <div className="hud-errors">
-        {camera.status === 'error' && (
-          <ErrorScreen title={camera.error.title} detail={camera.error.detail} />
-        )}
+        {camera.status === 'error' && <ErrorScreen title={camera.error.title} detail={camera.error.detail} />}
         {modelStatus === 'error' && (
           <ErrorScreen
             title="Model failed to load"

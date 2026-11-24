@@ -29,7 +29,9 @@ def _linear_to_srgb(channel: float) -> float:
 def _material_hex(gltf: dict, material_index) -> str | None:
     if material_index is None:
         return None
-    factor = gltf["materials"][material_index].get("pbrMetallicRoughness", {}).get("baseColorFactor")
+    factor = (
+        gltf["materials"][material_index].get("pbrMetallicRoughness", {}).get("baseColorFactor")
+    )
     if not factor:
         return None
     r, g, b = (round(_linear_to_srgb(c) * 255) for c in factor[:3])
@@ -46,7 +48,8 @@ def _triangle_count(gltf: dict, mesh: dict) -> int:
 
 def _primitive_triangles(gltf: dict, mesh: dict) -> list[int]:
     return [
-        gltf["accessors"][p.get("indices", p["attributes"]["POSITION"])]["count"] // 3 for p in mesh["primitives"]
+        gltf["accessors"][p.get("indices", p["attributes"]["POSITION"])]["count"] // 3
+        for p in mesh["primitives"]
     ]
 
 

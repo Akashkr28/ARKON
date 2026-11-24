@@ -51,12 +51,20 @@ export const FEATURE_TYPES = {
   tube: {
     label: 'Tube',
     base: true,
-    params: [length('outer', 'Outer diameter', 60), length('inner', 'Inner diameter', 40), length('height', 'Height', 80)],
+    params: [
+      length('outer', 'Outer diameter', 60),
+      length('inner', 'Inner diameter', 40),
+      length('height', 'Height', 80),
+    ],
   },
   prism: {
     label: 'Polygon prism',
     base: true,
-    params: [count('sides', 'Sides', 6, 3, 64), length('acrossFlats', 'Across flats', 40), length('height', 'Height', 20)],
+    params: [
+      count('sides', 'Sides', 6, 3, 64),
+      length('acrossFlats', 'Across flats', 40),
+      length('height', 'Height', 20),
+    ],
   },
   // ---- operations ----
   hole: {
@@ -170,7 +178,8 @@ export function patternPoints({
     const ox = ((n - 1) * pitch) / 2;
     const oy = ((rows - 1) * rowPitch) / 2;
     const points = [];
-    for (let j = 0; j < rows; j += 1) for (let i = 0; i < n; i += 1) points.push([x - ox + i * pitch, y - oy + j * rowPitch]);
+    for (let j = 0; j < rows; j += 1)
+      for (let i = 0; i < n; i += 1) points.push([x - ox + i * pitch, y - oy + j * rowPitch]);
     return points;
   }
   if (pattern === 'circle') {

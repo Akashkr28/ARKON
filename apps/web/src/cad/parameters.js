@@ -89,7 +89,8 @@ export function resolveFeatures(features, values) {
     if (failed) {
       errors[feature.id] = failed;
       // The base shape is still needed for everything after it; operations can be skipped.
-      if (FEATURE_TYPES[feature.type].base) resolved.push({ ...feature, params: { ...feature.params, ...defaultsFor(feature) } });
+      if (FEATURE_TYPES[feature.type].base)
+        resolved.push({ ...feature, params: { ...feature.params, ...defaultsFor(feature) } });
       continue;
     }
     resolved.push({ ...feature, params });

@@ -118,7 +118,9 @@ export default function DesignHandles({ content }) {
       const ray = rayAt(x, y);
       const origin = world(handle.origin);
       if (handle.kind === 'axis') {
-        const dir = world(handle.origin.map((v, i) => v + handle.dir[i])).sub(origin).normalize();
+        const dir = world(handle.origin.map((v, i) => v + handle.dir[i]))
+          .sub(origin)
+          .normalize();
         const w0 = origin.clone().sub(ray.origin);
         const bDot = dir.dot(ray.direction);
         const denom = 1 - bDot * bDot;
@@ -127,7 +129,9 @@ export default function DesignHandles({ content }) {
         const local = content.worldToLocal(origin.clone().addScaledVector(dir, s));
         return local.toArray().reduce((sum, v, i) => sum + (v - handle.origin[i]) * handle.dir[i], 0) * 1000;
       }
-      const normal = world(handle.origin.map((v, i) => v + (i === 1 ? 1 : 0))).sub(origin).normalize();
+      const normal = world(handle.origin.map((v, i) => v + (i === 1 ? 1 : 0)))
+        .sub(origin)
+        .normalize();
       const along = normal.dot(ray.direction);
       if (Math.abs(along) < 1e-6) return null; // looking edge-on at the plane
       const t = normal.dot(origin.clone().sub(ray.origin)) / along;

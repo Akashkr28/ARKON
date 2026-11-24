@@ -106,9 +106,18 @@ describe('measure tool', () => {
 
 describe('rotateXYZ matches three.js', () => {
   it.each([
-    [[1, 2, 3], [0.3, -0.6, 0]],
-    [[0, 1, 0], [Math.PI / 2, 0, 0]],
-    [[-0.5, 0.2, 0.9], [0.7, 1.9, -0.4]],
+    [
+      [1, 2, 3],
+      [0.3, -0.6, 0],
+    ],
+    [
+      [0, 1, 0],
+      [Math.PI / 2, 0, 0],
+    ],
+    [
+      [-0.5, 0.2, 0.9],
+      [0.7, 1.9, -0.4],
+    ],
   ])('%j rotated by %j', (v, angles) => {
     const expected = new Vector3(...v).applyEuler(new Euler(...angles, 'XYZ')).toArray();
     rotateXYZ(v, angles).forEach((value, i) => expect(value).toBeCloseTo(expected[i]));

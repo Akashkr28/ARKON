@@ -106,11 +106,19 @@ describe('spec units', () => {
 describe('loading specs', () => {
   beforeEach(() => useSpecStore.setState({ status: 'none', specs: [], materialPicks: {} }));
 
-  const respond = (body, ok = true) => async () => ({ ok, status: ok ? 200 : 500, json: async () => body });
+  const respond =
+    (body, ok = true) =>
+    async () => ({ ok, status: ok ? 200 : 500, json: async () => body });
 
   it('loads a bundled sample’s specs by part index', async () => {
     await loadSpecs('aster', {
-      fetchImpl: respond({ units: { length: 'mm' }, parts: [{ index: 1, name: 'B', spec: { volumeMm3: 2 } }, { index: 0, name: 'A', spec: { volumeMm3: 1 } }] }),
+      fetchImpl: respond({
+        units: { length: 'mm' },
+        parts: [
+          { index: 1, name: 'B', spec: { volumeMm3: 2 } },
+          { index: 0, name: 'A', spec: { volumeMm3: 1 } },
+        ],
+      }),
     });
     const state = useSpecStore.getState();
     expect(state.status).toBe('ready');

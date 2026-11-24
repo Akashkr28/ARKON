@@ -100,9 +100,12 @@ async function start() {
   } else {
     // TCP on loopback only; no Unix socket, so nothing depends on path length.
     run('pg_ctl', [
-      '-D', DATA_DIR,
-      '-l', join(DATA_DIR, 'server.log'),
-      '-o', `-p ${PORT} -c listen_addresses=127.0.0.1 -c unix_socket_directories=''`,
+      '-D',
+      DATA_DIR,
+      '-l',
+      join(DATA_DIR, 'server.log'),
+      '-o',
+      `-p ${PORT} -c listen_addresses=127.0.0.1 -c unix_socket_directories=''`,
       '-w',
       'start',
     ]);

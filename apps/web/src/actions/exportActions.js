@@ -97,7 +97,21 @@ export async function exportPdfReport() {
 
   autoTable(doc, {
     startY: 128,
-    head: [['#', 'Part no.', 'Part', 'Qty', 'Material', 'Unit mass', 'Total mass', `Size L×W×H (${u})`, `Volume (${u}³)`, 'Features', 'Used in']],
+    head: [
+      [
+        '#',
+        'Part no.',
+        'Part',
+        'Qty',
+        'Material',
+        'Unit mass',
+        'Total mass',
+        `Size L×W×H (${u})`,
+        `Volume (${u}³)`,
+        'Features',
+        'Used in',
+      ],
+    ],
     body: bom.rows.map((r) => [
       r.item,
       r.partNumber,
@@ -113,7 +127,12 @@ export async function exportPdfReport() {
     ]),
     styles: { fontSize: 7, cellPadding: 1.2, overflow: 'linebreak' },
     headStyles: { fillColor: [3, 60, 80] },
-    columnStyles: { 0: { cellWidth: 8 }, 3: { cellWidth: 9, halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } },
+    columnStyles: {
+      0: { cellWidth: 8 },
+      3: { cellWidth: 9, halign: 'right' },
+      5: { halign: 'right' },
+      6: { halign: 'right' },
+    },
     didDrawPage: () => {
       doc.setFontSize(7);
       doc.setTextColor(120);
@@ -122,7 +141,9 @@ export async function exportPdfReport() {
         14,
         doc.internal.pageSize.getHeight() - 8,
       );
-      doc.text(`Page ${doc.getNumberOfPages()}`, pageWidth - 14, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
+      doc.text(`Page ${doc.getNumberOfPages()}`, pageWidth - 14, doc.internal.pageSize.getHeight() - 8, {
+        align: 'right',
+      });
       doc.setTextColor(0);
     },
   });

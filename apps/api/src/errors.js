@@ -25,7 +25,10 @@ const DATABASE_UNAVAILABLE = new Set([
 ]);
 
 export function isDatabaseUnavailable(error) {
-  return DATABASE_UNAVAILABLE.has(error?.code) || /Connection terminated|timeout exceeded when trying to connect/i.test(error?.message ?? '');
+  return (
+    DATABASE_UNAVAILABLE.has(error?.code) ||
+    /Connection terminated|timeout exceeded when trying to connect/i.test(error?.message ?? '')
+  );
 }
 
 // Express 5 forwards rejected promises from async handlers here.

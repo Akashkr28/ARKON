@@ -34,7 +34,8 @@ export function setHandHover(x, y) {
   }
   // Over the scene: design handles and assembly parts light up as under the mouse.
   const { workspace } = useUiStore.getState();
-  if (x !== null && !next && workspace !== 'view') document.body.classList.toggle('is-handle-hover', Boolean(hoverHandle(x, y)));
+  if (x !== null && !next && workspace !== 'view')
+    document.body.classList.toggle('is-handle-hover', Boolean(hoverHandle(x, y)));
 }
 
 // --- Pressing -----------------------------------------------------------------------
@@ -96,7 +97,10 @@ export function pressHud(target, x, y) {
   flash(interactive);
   if (interactive.tagName === 'SELECT') return openGesturePicker(interactive, x, y);
   if (isSlider(interactive)) return slideHud(interactive, x);
-  if (interactive.tagName === 'TEXTAREA' || (interactive.tagName === 'INPUT' && !['checkbox', 'radio', 'button'].includes(interactive.type))) {
+  if (
+    interactive.tagName === 'TEXTAREA' ||
+    (interactive.tagName === 'INPUT' && !['checkbox', 'radio', 'button'].includes(interactive.type))
+  ) {
     interactive.focus(); // typing still needs the keyboard
     interactive.select?.();
     return;
@@ -115,7 +119,12 @@ export function openGesturePicker(select, x, y) {
   const label = select.getAttribute('aria-label') ?? select.title ?? '';
   const options = [...select.options]
     .filter((option) => !option.hidden)
-    .map((option) => ({ value: option.value, label: option.textContent, disabled: option.disabled, selected: option.selected && option.value !== '' }));
+    .map((option) => ({
+      value: option.value,
+      label: option.textContent,
+      disabled: option.disabled,
+      selected: option.selected && option.value !== '',
+    }));
   useHandStore.setState({ picker: { x, y, label, options } });
 }
 

@@ -31,25 +31,21 @@ describe.skipIf(!testUrl)('migrations (against DATABASE_URL_TEST)', () => {
       `select table_name from information_schema.tables
        where table_schema = 'public' order by table_name`,
     );
-    expect(rows.map((r) => r.table_name)).toEqual([
-      'conversion_jobs',
-      'model_parts',
-      'models',
-      'schema_migrations',
-    ]);
+    expect(rows.map((r) => r.table_name)).toEqual(['conversion_jobs', 'model_parts', 'models', 'schema_migrations']);
   });
 
   it('keeps updated_at current on model updates', async () => {
-    const { rows: [model] } = await pool.query(
+    const {
+      rows: [model],
+    } = await pool.query(
       `insert into models (name, original_filename, source_format, source_path, source_bytes)
        values ('Test', 'test.step', 'step', 'uploads/x.step', 10)
        returning id, updated_at`,
     );
     await new Promise((r) => setTimeout(r, 20));
-    const { rows: [updated] } = await pool.query(
-      `update models set status = 'converting' where id = $1 returning updated_at`,
-      [model.id],
-    );
+    const {
+      rows: [updated],
+    } = await pool.query(`update models set status = 'converting' where id = $1 returning updated_at`, [model.id]);
     expect(updated.updated_at.getTime()).toBeGreaterThan(model.updated_at.getTime());
   });
 });

@@ -48,18 +48,15 @@ export async function replaceParts(db, modelId, parts) {
 
 export async function enqueueConversion(db, modelId, quality) {
   await db.query(`update models set status = 'queued', error = null where id = $1`, [modelId]);
-  const { rows } = await db.query(
-    `insert into conversion_jobs (model_id, quality) values ($1, $2) returning id`,
-    [modelId, quality],
-  );
+  const { rows } = await db.query(`insert into conversion_jobs (model_id, quality) values ($1, $2) returning id`, [
+    modelId,
+    quality,
+  ]);
   return rows[0].id;
 }
 
 export async function listModels(db, { limit = 100 } = {}) {
-  const { rows } = await db.query(
-    `select ${MODEL_COLUMNS} from models order by created_at desc, id limit $1`,
-    [limit],
-  );
+  const { rows } = await db.query(`select ${MODEL_COLUMNS} from models order by created_at desc, id limit $1`, [limit]);
   return rows;
 }
 
@@ -96,10 +93,7 @@ export async function findLatestJob(db, modelId) {
 }
 
 export async function deleteModel(db, id) {
-  const { rows } = await db.query(
-    `delete from models where id = $1 returning source_path, glb_path`,
-    [id],
-  );
+  const { rows } = await db.query(`delete from models where id = $1 returning source_path, glb_path`, [id]);
   return rows[0] ?? null;
 }
 
@@ -147,18 +141,16 @@ export async function completeConversion(db, { jobId, modelId, glbPath, result }
 }
 
 export async function failConversion(db, { jobId, modelId, userMessage, detail }) {
-  await db.query(`update models set status = 'failed', error = $2 where id = $1`, [
-    modelId,
-    userMessage,
-  ]);
+  await db.query(`update models set status = 'failed', error = $2 where id = $1`, [modelId, userMessage]);
   await finishJob(db, jobId, 'failed', detail);
 }
 
 export async function finishJob(db, jobId, status, error) {
-  await db.query(
-    `update conversion_jobs set status = $2, error = $3, finished_at = now() where id = $1`,
-    [jobId, status, error],
-  );
+  await db.query(`update conversion_jobs set status = $2, error = $3, finished_at = now() where id = $1`, [
+    jobId,
+    status,
+    error,
+  ]);
 }
 
 // Puts a claimed job back in the queue without counting it as an attempt

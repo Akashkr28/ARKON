@@ -19,10 +19,7 @@ export default function GestureLegend() {
   return (
     <div className="hud-panel hud-legend">
       {ENTRIES.map((entry) => (
-        <span
-          key={entry.label}
-          className={`legend-entry${entry.state === gestureState ? ' is-active' : ''}`}
-        >
+        <span key={entry.label} className={`legend-entry${entry.state === gestureState ? ' is-active' : ''}`}>
           <span className="legend-icon">{entry.icon}</span>
           {entry.label}
         </span>

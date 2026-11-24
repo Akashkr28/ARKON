@@ -20,7 +20,11 @@ def test_convert_round_trip(storage, sample_step):
     shutil.copy(sample_step, storage / "uploads" / "abc.step")
     res = client.post(
         "/convert",
-        json={"input_path": "uploads/abc.step", "output_path": "models/abc.glb", "quality": "draft"},
+        json={
+            "input_path": "uploads/abc.step",
+            "output_path": "models/abc.glb",
+            "quality": "draft",
+        },
     )
     assert res.status_code == 200, res.text
     body = res.json()
@@ -38,20 +42,26 @@ def test_refuses_paths_outside_storage(storage, input_path):
 
 
 def test_missing_input_is_404(storage):
-    res = client.post("/convert", json={"input_path": "uploads/nope.step", "output_path": "models/x.glb"})
+    res = client.post(
+        "/convert", json={"input_path": "uploads/nope.step", "output_path": "models/x.glb"}
+    )
     assert res.status_code == 404
 
 
 def test_bad_step_is_422_with_readable_message(storage):
     (storage / "uploads" / "bad.step").write_text("hello")
-    res = client.post("/convert", json={"input_path": "uploads/bad.step", "output_path": "models/bad.glb"})
+    res = client.post(
+        "/convert", json={"input_path": "uploads/bad.step", "output_path": "models/bad.glb"}
+    )
     assert res.status_code == 422
     assert "STEP" in res.json()["detail"]
 
 
 def test_output_must_be_glb(storage, sample_step):
     shutil.copy(sample_step, storage / "uploads" / "a.step")
-    res = client.post("/convert", json={"input_path": "uploads/a.step", "output_path": "models/a.txt"})
+    res = client.post(
+        "/convert", json={"input_path": "uploads/a.step", "output_path": "models/a.txt"}
+    )
     assert res.status_code == 400
 
 

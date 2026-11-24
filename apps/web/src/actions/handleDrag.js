@@ -5,7 +5,13 @@ import { applyHandleValues, beginDesignGesture, endDesignGesture, selectFeature 
 import { formatSpecLength } from '../units';
 import { useViewerStore } from '../store/viewerStore';
 import { useUiStore } from '../store/uiStore';
-import { beginComponentDrag, endComponentDrag, hoverComponent, isDraggingComponent, moveComponentDrag } from './componentDrag';
+import {
+  beginComponentDrag,
+  endComponentDrag,
+  hoverComponent,
+  isDraggingComponent,
+  moveComponentDrag,
+} from './componentDrag';
 
 // One drag of a design handle, from mouse or pinch alike: begin where it was grabbed,
 // move with the pointer, end on release. The whole drag is one undo step.

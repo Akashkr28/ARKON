@@ -27,12 +27,20 @@ export default function SectionPlaneGizmo({ content, bounds }) {
 
   // PlaneGeometry lies in XY facing +Z; turn it to face along the section axis.
   const rotation = section.axis === 'x' ? [0, Math.PI / 2, 0] : section.axis === 'y' ? [-Math.PI / 2, 0, 0] : [0, 0, 0];
-  const scale = section.axis === 'x' ? [size[2], size[1], 1] : section.axis === 'y' ? [size[0], size[2], 1] : [size[0], size[1], 1];
+  const scale =
+    section.axis === 'x' ? [size[2], size[1], 1] : section.axis === 'y' ? [size[0], size[2], 1] : [size[0], size[1], 1];
 
   return createPortal(
     <group position={centre} rotation={rotation} scale={scale}>
       <mesh geometry={geometry} renderOrder={15}>
-        <meshBasicMaterial color="#ffb347" transparent opacity={0.08} side={DoubleSide} depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial
+          color="#ffb347"
+          transparent
+          opacity={0.08}
+          side={DoubleSide}
+          depthWrite={false}
+          toneMapped={false}
+        />
       </mesh>
       <lineSegments geometry={edges} renderOrder={15}>
         <lineBasicMaterial color="#ffb347" transparent opacity={0.8} depthTest={false} toneMapped={false} />

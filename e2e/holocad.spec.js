@@ -50,7 +50,9 @@ test.describe('viewer', () => {
 
   test('standard views and fit', async ({ page }) => {
     await page.keyboard.press('3');
-    await expect.poll(() => page.evaluate(() => window.holocad.viewerStore.getState().rotation[1])).toBeCloseTo(-Math.PI / 2);
+    await expect
+      .poll(() => page.evaluate(() => window.holocad.viewerStore.getState().rotation[1]))
+      .toBeCloseTo(-Math.PI / 2);
     await page.getByRole('button', { name: /^FIT 0/ }).click();
     await expect.poll(() => page.evaluate(() => window.holocad.viewerStore.getState().scale)).toBe(1);
   });
@@ -182,10 +184,16 @@ test.describe('bill of materials export', () => {
     await page.getByRole('tab', { name: 'SPECS' }).click();
     const bar = page.getByRole('group', { name: 'Export bill of materials' });
     await expect(bar).toContainText('118 parts');
-    const [download] = await Promise.all([page.waitForEvent('download'), bar.getByRole('button', { name: 'CSV' }).click()]);
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      bar.getByRole('button', { name: 'CSV' }).click(),
+    ]);
     expect(download.suggestedFilename()).toBe('Aster_C1_compact_car-BOM.csv');
     const csv = (await readFile(await download.path(), 'utf8')).replace(/^\uFEFF/, '');
-    const rows = csv.trimEnd().split('\r\n').map((line) => line.split(','));
+    const rows = csv
+      .trimEnd()
+      .split('\r\n')
+      .map((line) => line.split(','));
     const [header, ...body] = rows;
     const col = (name) => header.indexOf(name);
     const row = (name) => body.find((r) => r[col('Part name')] === name);
@@ -380,7 +388,10 @@ test.describe('design parameters and history', () => {
   test('saves and reopens a design file; autosaves between visits', async ({ page }) => {
     await page.getByLabel('Value of margin').fill('20');
     await page.getByLabel('Part name').fill('Bracket A');
-    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'SAVE DESIGN' }).click()]);
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'SAVE DESIGN' }).click(),
+    ]);
     expect(download.suggestedFilename()).toBe('Bracket_A.holocad.json');
     const saved = JSON.parse(await readFile(await download.path(), 'utf8'));
     expect(saved).toMatchObject({ format: 'holocad-design', name: 'Bracket A' });
@@ -507,7 +518,8 @@ test.describe('assembling', () => {
     // Drag the pin: it slides along the hole's axis only. One undo puts it back.
     const grip = await page.evaluate((id) => {
       for (let y = 60; y < innerHeight - 60; y += 4) {
-        for (let x = 40; x < innerWidth - 420; x += 4) if (window.holocad.componentAt(x, y)?.componentId === id) return { x, y };
+        for (let x = 40; x < innerWidth - 420; x += 4)
+          if (window.holocad.componentAt(x, y)?.componentId === id) return { x, y };
       }
       return null;
     }, pinId);
@@ -541,16 +553,25 @@ test.describe('assembling', () => {
     await expect(page.getByLabel('Assembly properties')).toContainText('Brass');
     expect(await page.evaluate(() => window.holocad.viewerStore.getState().materialMode)).toBe('original');
 
-    const [glb] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'EXPORT GLB' }).click()]);
+    const [glb] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'EXPORT GLB' }).click(),
+    ]);
     expect(glb.suggestedFilename()).toBe('Untitled_assembly.glb');
     expect((await readFile(await glb.path())).subarray(0, 4).toString()).toBe('glTF');
 
-    const [step] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'EXPORT STEP' }).click()]);
+    const [step] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'EXPORT STEP' }).click(),
+    ]);
     const stepText = await readFile(await step.path(), 'utf8');
     expect(stepText).toContain("'Pin'");
     expect(stepText).toContain("'Mounting plate'");
 
-    const [csv] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'BOM CSV' }).click()]);
+    const [csv] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'BOM CSV' }).click(),
+    ]);
     const rows = (await readFile(await csv.path(), 'utf8')).trim().split('\r\n');
     expect(rows).toHaveLength(3);
     expect(rows[2]).toMatch(/^2,Pin,Designed part,1,Brass,/);
@@ -721,7 +742,8 @@ test.describe('hand cursor', () => {
     const scroller = await tree.evaluateHandle((node) => {
       for (let el = node; el; el = el.parentElement) {
         const style = getComputedStyle(el);
-        if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight) return el;
+        if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight)
+          return el;
       }
       return null;
     });

@@ -20,9 +20,11 @@ from OCP.Bnd import Bnd_OBB
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepGProp import BRepGProp
+from OCP.collections import IndexedMap_TopoDS_Shape_TopTools_ShapeMapHasher as ShapeMap
+from OCP.collections import Sequence_TDF_Label
 from OCP.GeomAbs import GeomAbs_SurfaceType
-from OCP.GProp import GProp_GProps
 from OCP.gp import gp_Vec
+from OCP.GProp import GProp_GProps
 from OCP.TCollection import TCollection_AsciiString, TCollection_ExtendedString
 from OCP.TDataStd import TDataStd_NamedData, TDataStd_TreeNode
 from OCP.TDF import TDF_Label, TDF_Tool
@@ -30,9 +32,13 @@ from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_Orientation, TopAbs_SOLI
 from OCP.TopExp import TopExp
 from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS
-from OCP.collections import IndexedMap_TopoDS_Shape_TopTools_ShapeMapHasher as ShapeMap
-from OCP.collections import Sequence_TDF_Label
-from OCP.XCAFDoc import XCAFDoc, XCAFDoc_DocumentTool, XCAFDoc_Material, XCAFDoc_MaterialTool, XCAFDoc_ShapeTool
+from OCP.XCAFDoc import (
+    XCAFDoc,
+    XCAFDoc_DocumentTool,
+    XCAFDoc_Material,
+    XCAFDoc_MaterialTool,
+    XCAFDoc_ShapeTool,
+)
 from OCP.XCAFPrs import XCAFPrs_DocumentExplorer, XCAFPrs_DocumentExplorerFlags_OnlyLeafNodes
 
 from .cad_document import DOCUMENT_UNIT_IN_METRES
@@ -130,7 +136,10 @@ def material_index(doc) -> dict[str, dict]:
             part = child.Label()
             # Stored in the document's units: g/mm³. 1 g/mm³ = 10⁶ kg/m³.
             density = XCAFDoc_MaterialTool.GetDensityForShape_s(part) * 1e6
-            found[_entry(part)] = {"name": name or None, "density_kg_m3": round(density, 3) if density > 0 else None}
+            found[_entry(part)] = {
+                "name": name or None,
+                "density_kg_m3": round(density, 3) if density > 0 else None,
+            }
             if not child.HasNext():
                 break
             child = child.Next()
@@ -179,13 +188,19 @@ def _overall_size(shape) -> list[float]:
     BRepBndLib.AddOBB_s(shape, obb, False, True, False)
     if obb.IsVoid():
         return [0.0, 0.0, 0.0]
-    return sorted((round(2 * h, 3) for h in (obb.XHSize(), obb.YHSize(), obb.ZHSize())), reverse=True)
+    return sorted(
+        (round(2 * h, 3) for h in (obb.XHSize(), obb.YHSize(), obb.ZHSize())), reverse=True
+    )
 
 
 def _to_viewer_metres(point) -> list[float]:
     # CAD is Z-up, glTF is Y-up: (x, y, z) → (x, z, -y); same as the model bounds.
     s = DOCUMENT_UNIT_IN_METRES
-    return [round(point.X() * s, 6) + 0.0, round(point.Z() * s, 6) + 0.0, round(-point.Y() * s, 6) + 0.0]
+    return [
+        round(point.X() * s, 6) + 0.0,
+        round(point.Z() * s, 6) + 0.0,
+        round(-point.Y() * s, 6) + 0.0,
+    ]
 
 
 def _cylinder_face(face):
@@ -215,8 +230,9 @@ def _cylinder_face(face):
     if first < 0:
         d = [-c for c in d]
     o = [origin.X(), origin.Y(), origin.Z()]
-    along = sum(a * b for a, b in zip(o, d))
-    foot = [a - along * b for a, b in zip(o, d)]  # where the axis line meets the plane through 0
+    along = sum(a * b for a, b in zip(o, d, strict=True))
+    # Where the axis line meets the plane through 0.
+    foot = [a - along * b for a, b in zip(o, d, strict=True)]
     sign = 1 if first > 0 else -1
     interval = sorted((along + sign * v0, along + sign * v1))
     return cylinder.Radius(), foot, d, u1 - u0, interval, concave
@@ -292,7 +308,9 @@ class _ShapeFacts:
 def _facts(shape) -> _ShapeFacts:
     solids = _sub_shapes(shape, TopAbs_SOLID)
     faces = [TopoDS.Face(f) for f in _sub_shapes(shape, TopAbs_FACE)]
-    surfaces = Counter(SURFACE_NAMES.get(BRepAdaptor_Surface(f, True).GetType(), "other") for f in faces)
+    surfaces = Counter(
+        SURFACE_NAMES.get(BRepAdaptor_Surface(f, True).GetType(), "other") for f in faces
+    )
 
     area_props = GProp_GProps()
     BRepGProp.SurfaceProperties_s(shape, area_props)
@@ -330,7 +348,9 @@ def part_specs(doc) -> list[tuple[str, dict]]:
         key = _entry(node.product_label)  # e.g. "0:1:1:3"; Tag() alone isn't unique
         if key not in facts_by_product:
             # Measured unplaced; the node's location carries the whole placement.
-            product_shape = XCAFDoc_ShapeTool.GetShape_s(node.product_label).Located(TopLoc_Location())
+            product_shape = XCAFDoc_ShapeTool.GetShape_s(node.product_label).Located(
+                TopLoc_Location()
+            )
             facts_by_product[key] = _facts(product_shape)
             identity_by_product[key] = identity(node.product_label, materials)
         facts, ident = facts_by_product[key], identity_by_product[key]

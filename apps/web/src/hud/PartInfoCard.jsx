@@ -20,7 +20,10 @@ function SelectionSummary({ parts, unit }) {
           {parts.at(-1).name} · {formatSize(parts.at(-1).size, unit)}
         </dd>
       </dl>
-      <div className="part-info-list">{names.slice(0, 8).join(', ')}{names.length > 8 ? ', …' : ''}</div>
+      <div className="part-info-list">
+        {names.slice(0, 8).join(', ')}
+        {names.length > 8 ? ', …' : ''}
+      </div>
     </>
   );
 }

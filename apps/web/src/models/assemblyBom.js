@@ -22,7 +22,8 @@ export function buildAssemblyBom(components, info) {
     const appearance = appearanceOf(component);
     const material = component.source.kind === 'design' ? materialOf(appearance) : null;
     const details = info[component.id] ?? null;
-    const sourceKey = component.source.kind === 'design' ? JSON.stringify(component.source.design.features) : component.source.modelId;
+    const sourceKey =
+      component.source.kind === 'design' ? JSON.stringify(component.source.design.features) : component.source.modelId;
     const key = `${component.name.replace(/ \d+$/, '')}|${sourceKey}|${material?.id ?? ''}`;
     let row = byKey.get(key);
     if (!row) {
@@ -37,7 +38,10 @@ export function buildAssemblyBom(components, info) {
         unitMassKg: unitMass,
         totalMassKg: null,
         // A model's mass is only partly known when some of its parts have no material.
-        massNote: component.source.kind === 'model' && details?.partsWithoutMass ? `${details.partsWithoutMass} parts without mass` : '',
+        massNote:
+          component.source.kind === 'model' && details?.partsWithoutMass
+            ? `${details.partsWithoutMass} parts without mass`
+            : '',
         sizeMm: details?.sizeMm ?? null,
       };
       rows.push(row);
@@ -59,14 +63,36 @@ export function buildAssemblyBom(components, info) {
 }
 
 export function assemblyBomCsv(bom) {
-  const header = ['Item', 'Part', 'Kind', 'Qty', 'Material', 'Unit mass (kg)', 'Total mass (kg)', 'Length (mm)', 'Width (mm)', 'Height (mm)', 'Note'];
+  const header = [
+    'Item',
+    'Part',
+    'Kind',
+    'Qty',
+    'Material',
+    'Unit mass (kg)',
+    'Total mass (kg)',
+    'Length (mm)',
+    'Width (mm)',
+    'Height (mm)',
+    'Note',
+  ];
   const lines = [header.map(csvCell).join(',')];
   for (const r of bom.rows) {
     lines.push(
-      [r.item, r.name, r.kind, r.quantity, r.material, r.unitMassKg, r.totalMassKg, ...(r.sizeMm ?? [null, null, null]), r.massNote]
+      [
+        r.item,
+        r.name,
+        r.kind,
+        r.quantity,
+        r.material,
+        r.unitMassKg,
+        r.totalMassKg,
+        ...(r.sizeMm ?? [null, null, null]),
+        r.massNote,
+      ]
         .map(csvCell)
         .join(','),
     );
   }
-  return `﻿${lines.join('\r\n')}\r\n`;
+  return `\uFEFF${lines.join('\r\n')}\r\n`;
 }

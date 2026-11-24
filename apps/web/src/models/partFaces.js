@@ -50,8 +50,18 @@ export function describeFace(face, unit = 'mm') {
       const whole = face.sweep >= 350;
       const small = face.sweep <= 100;
       let title;
-      if (face.concave) title = whole ? `Hole Ø${L(2 * face.radius)}` : small ? `Fillet R${L(face.radius)}` : `Concave face R${L(face.radius)}`;
-      else title = whole ? `Outer Ø${L(2 * face.radius)}` : small ? `Round R${L(face.radius)}` : `Cylindrical face R${L(face.radius)}`;
+      if (face.concave)
+        title = whole
+          ? `Hole Ø${L(2 * face.radius)}`
+          : small
+            ? `Fillet R${L(face.radius)}`
+            : `Concave face R${L(face.radius)}`;
+      else
+        title = whole
+          ? `Outer Ø${L(2 * face.radius)}`
+          : small
+            ? `Round R${L(face.radius)}`
+            : `Cylindrical face R${L(face.radius)}`;
       return {
         title,
         details: [`Cylindrical · R${L(face.radius)} · ${face.sweep}° sweep`, `Length ${L(face.length)}`, area],
@@ -60,7 +70,11 @@ export function describeFace(face, unit = 'mm') {
     case 'cone':
       return {
         title: 'Conical face',
-        details: [`Half-angle ${face.half_angle ?? face.halfAngle}° (chamfer or countersink)`, `Reference R${L(face.radius)}`, area],
+        details: [
+          `Half-angle ${face.half_angle ?? face.halfAngle}° (chamfer or countersink)`,
+          `Reference R${L(face.radius)}`,
+          area,
+        ],
       };
     case 'sphere':
       return { title: `Spherical face R${L(face.radius)}`, details: [area] };
@@ -81,7 +95,10 @@ export function describeEdge(edge, unit = 'mm') {
   if (edge.type === 'line') return { title: 'Straight edge', details: [`Length ${L(edge.length)}`] };
   if (edge.type === 'circle') {
     return edge.full
-      ? { title: `Circular edge Ø${L(2 * edge.radius)}`, details: [`R${L(edge.radius)}`, `Circumference ${L(edge.length)}`] }
+      ? {
+          title: `Circular edge Ø${L(2 * edge.radius)}`,
+          details: [`R${L(edge.radius)}`, `Circumference ${L(edge.length)}`],
+        }
       : { title: `Arc R${L(edge.radius)}`, details: [`Length ${L(edge.length)}`] };
   }
   return { title: `${edge.type[0].toUpperCase()}${edge.type.slice(1)} edge`, details: [`Length ${L(edge.length)}`] };

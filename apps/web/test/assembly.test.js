@@ -85,7 +85,13 @@ describe('mates', () => {
 
   it('face to face: the moving face lands on the target face, facing it', () => {
     const placements = { plate: IDENTITY, block: { position: [0.3, 0.2, 0.1], quaternion: [0, 0, 0, 1] } };
-    const mate = createMate('contact', { componentId: 'block', geometry: bottom }, { componentId: 'plate', geometry: top }, placements, 'm1');
+    const mate = createMate(
+      'contact',
+      { componentId: 'block', geometry: bottom },
+      { componentId: 'plate', geometry: top },
+      placements,
+      'm1',
+    );
     const placed = solveMate(mate, placements.plate);
     close(pointToWorld(placed, bottom.point).toArray(), [0, 0.01, 0]);
     close(directionToWorld(placed, bottom.normal).toArray(), [0, -1, 0]);
@@ -99,7 +105,13 @@ describe('mates', () => {
   it('turns the moving part over when the faces point the same way', () => {
     // Both faces up: the block has to flip to put its "top" against the plate.
     const placements = { plate: IDENTITY, block: IDENTITY };
-    const mate = createMate('contact', { componentId: 'block', geometry: top }, { componentId: 'plate', geometry: top }, placements, 'm1');
+    const mate = createMate(
+      'contact',
+      { componentId: 'block', geometry: top },
+      { componentId: 'plate', geometry: top },
+      placements,
+      'm1',
+    );
     const placed = solveMate(mate, IDENTITY);
     close(directionToWorld(placed, top.normal).toArray(), [0, -1, 0]);
     // Flipping makes them face the same way (flush).
@@ -111,7 +123,13 @@ describe('mates', () => {
     const hole = { type: 'cylinder', point: [0.02, 0.005, 0], axis: [0, 1, 0], radius: 0.004 };
     const pin = { type: 'cylinder', point: [0, 0, 0], axis: [1, 0, 0], radius: 0.004 }; // lying down
     const placements = { plate: IDENTITY, pin: { position: [0.5, 0, 0], quaternion: [0, 0, 0, 1] } };
-    const mate = createMate('axis', { componentId: 'pin', geometry: pin }, { componentId: 'plate', geometry: hole }, placements, 'm1');
+    const mate = createMate(
+      'axis',
+      { componentId: 'pin', geometry: pin },
+      { componentId: 'plate', geometry: hole },
+      placements,
+      'm1',
+    );
     const placed = solveMate(mate, IDENTITY);
     close(pointToWorld(placed, pin.point).toArray(), hole.point);
     expect(Math.abs(directionToWorld(placed, pin.axis).y)).toBeCloseTo(1);
@@ -136,10 +154,30 @@ describe('mates', () => {
     ];
     const blockTop = { type: 'plane', point: [0, 0.03, 0], normal: [0, 1, 0] };
     const initial = solveAssembly(components, []);
-    const m1 = createMate('contact', { componentId: 'block', geometry: bottom }, { componentId: 'plate', geometry: top }, initial, 'm1');
-    const m2 = createMate('contact', { componentId: 'cap', geometry: bottom }, { componentId: 'block', geometry: blockTop }, solveAssembly(components, [m1]), 'm2');
+    const m1 = createMate(
+      'contact',
+      { componentId: 'block', geometry: bottom },
+      { componentId: 'plate', geometry: top },
+      initial,
+      'm1',
+    );
+    const m2 = createMate(
+      'contact',
+      { componentId: 'cap', geometry: bottom },
+      { componentId: 'block', geometry: blockTop },
+      solveAssembly(components, [m1]),
+      'm2',
+    );
     // Move and turn the plate: the block and the cap come with it.
-    const moved = [{ ...components[0], position: [0, 1, 0], quaternion: new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2).toArray() }, components[1], components[2]];
+    const moved = [
+      {
+        ...components[0],
+        position: [0, 1, 0],
+        quaternion: new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2).toArray(),
+      },
+      components[1],
+      components[2],
+    ];
     const placements = solveAssembly(moved, [m1, m2]);
     const capBottom = pointToWorld(placements.cap, bottom.point);
     // Plate top at x = −0.01 (turned 90° about Z, raised 1 m); block 30 mm tall on it.

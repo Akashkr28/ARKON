@@ -25,10 +25,10 @@ from OCP.TDF import TDF_Label
 from OCP.XCAFDoc import XCAFDoc_ShapeTool
 
 from .cad_document import DOCUMENT_UNIT_IN_METRES, new_document, shape_tool
-from .glb import list_parts
 from .faces import part_faces
-from .specs import attach_specs, part_specs
+from .glb import list_parts
 from .occt_messages import configure_occt_output
+from .specs import attach_specs, part_specs
 
 configure_occt_output()
 
@@ -84,7 +84,9 @@ def looks_like_step(path: Path) -> bool:
 
 def _read_step(path: Path):
     if not looks_like_step(path):
-        raise ConversionError("This doesn't look like a STEP file (it should start with ISO-10303-21).")
+        raise ConversionError(
+            "This doesn't look like a STEP file (it should start with ISO-10303-21)."
+        )
     doc = new_document()
     reader = STEPCAFControl_Reader()
     reader.SetNameMode(True)
@@ -211,7 +213,9 @@ def _write_json_atomically(path: Path, data) -> None:
         partial.unlink(missing_ok=True)
 
 
-def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "standard") -> ConversionResult:
+def convert_step_to_glb(
+    input_path: Path, output_path: Path, quality: str = "standard"
+) -> ConversionResult:
     started = time.perf_counter()
     input_path, output_path = Path(input_path), Path(output_path)
     if quality not in QUALITY:
@@ -249,14 +253,24 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
     )
 
 
-SPEC_UNITS = {"length": "mm", "area": "mm2", "volume": "mm3", "mass": "kg", "density": "kg/m3", "position": "m (viewer axes)"}
+SPEC_UNITS = {
+    "length": "mm",
+    "area": "mm2",
+    "volume": "mm3",
+    "mass": "kg",
+    "density": "kg/m3",
+    "position": "m (viewer axes)",
+}
 
 
 def _camel(value):
     if isinstance(value, list):
         return [_camel(v) for v in value]
     if isinstance(value, dict):
-        return {re.sub(r"_([a-z0-9])", lambda m: m.group(1).upper(), k): _camel(v) for k, v in value.items()}
+        return {
+            re.sub(r"_([a-z0-9])", lambda m: m.group(1).upper(), k): _camel(v)
+            for k, v in value.items()
+        }
     return value
 
 
@@ -264,7 +278,10 @@ def specs_document(result: ConversionResult) -> dict:
     """The same JSON the API serves at /api/models/:id/specs (camelCase)."""
     return {
         "units": SPEC_UNITS,
-        "parts": [{"index": p["index"], "name": p["name"], "spec": _camel(p.get("spec"))} for p in result.parts],
+        "parts": [
+            {"index": p["index"], "name": p["name"], "spec": _camel(p.get("spec"))}
+            for p in result.parts
+        ],
     }
 
 
@@ -280,10 +297,14 @@ def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
     if len(args) not in (2, 3):
         raise SystemExit(main.__doc__)
-    result = convert_step_to_glb(Path(args[0]), Path(args[1]), args[2] if len(args) == 3 else "standard")
+    result = convert_step_to_glb(
+        Path(args[0]), Path(args[1]), args[2] if len(args) == 3 else "standard"
+    )
     specs_path = Path(args[1]).with_suffix(".specs.json")
     specs_path.write_text(json.dumps(specs_document(result), separators=(",", ":")))
-    print(f"{result.part_count} parts, {result.glb_bytes // 1024} KB GLB, specs → {specs_path} ({result.seconds:.1f}s)")
+    print(
+        f"{result.part_count} parts, {result.glb_bytes // 1024} KB GLB, specs → {specs_path} ({result.seconds:.1f}s)"
+    )
 
 
 if __name__ == "__main__":

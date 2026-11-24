@@ -18,9 +18,7 @@ const openWhenReady = new Set();
 function replaceModel(updated) {
   const exists = get().models.some((m) => m.id === updated.id);
   set({
-    models: exists
-      ? get().models.map((m) => (m.id === updated.id ? updated : m))
-      : [updated, ...get().models],
+    models: exists ? get().models.map((m) => (m.id === updated.id ? updated : m)) : [updated, ...get().models],
   });
 }
 

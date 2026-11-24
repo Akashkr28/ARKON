@@ -38,7 +38,11 @@ export function normaliseDesign(raw) {
   if (!raw || typeof raw !== 'object') throw new Error('Not a HoloCAD design');
   const parameters = (Array.isArray(raw.parameters) ? raw.parameters : [])
     .filter((p) => p && typeof p.name === 'string' && p.expression !== undefined)
-    .map((p) => ({ id: typeof p.id === 'string' ? p.id : makeParameter('', '').id, name: p.name, expression: String(p.expression) }));
+    .map((p) => ({
+      id: typeof p.id === 'string' ? p.id : makeParameter('', '').id,
+      name: p.name,
+      expression: String(p.expression),
+    }));
   const features = (Array.isArray(raw.features) ? raw.features : [])
     .filter((f) => f && FEATURE_TYPES[f.type])
     .map((f) => {
@@ -48,7 +52,12 @@ export function normaliseDesign(raw) {
         if (isFormula(value) && spec.kind !== 'choice') params[spec.key] = { expr: String(value.expr) };
         else params[spec.key] = value === undefined ? spec.value : clampParam(f.type, spec.key, value);
       }
-      return { id: typeof f.id === 'string' ? f.id : newFeatureId(), type: f.type, enabled: f.enabled !== false, params };
+      return {
+        id: typeof f.id === 'string' ? f.id : newFeatureId(),
+        type: f.type,
+        enabled: f.enabled !== false,
+        params,
+      };
     });
   if (!features.length) throw new Error('The design has no features');
   return {
@@ -164,9 +173,20 @@ export function closeDesign() {
 
 export function newDesign(baseType = 'box') {
   const base = makeFeature(baseType);
-  change('New part', () => ({ name: 'Untitled part', features: [base], parameters: [], appearance: { ...DEFAULT_APPEARANCE }, selectedFeatureId: base.id, message: null }), {
-    rebuildNow: true,
-  });
+  change(
+    'New part',
+    () => ({
+      name: 'Untitled part',
+      features: [base],
+      parameters: [],
+      appearance: { ...DEFAULT_APPEARANCE },
+      selectedFeatureId: base.id,
+      message: null,
+    }),
+    {
+      rebuildNow: true,
+    },
+  );
   set({ frame: null });
   rebuild({ fit: true });
 }
@@ -180,7 +200,8 @@ export function renameDesign(name) {
 export function setDesignAppearance(patch) {
   const next = normaliseAppearance({ ...get().appearance, ...patch });
   const field = Object.keys(patch)[0] ?? 'appearance';
-  const label = { materialId: 'Change material', color: 'Change colour', finish: 'Change finish' }[field] ?? 'Change look';
+  const label =
+    { materialId: 'Change material', color: 'Change colour', finish: 'Change finish' }[field] ?? 'Change look';
   change(label, () => ({ appearance: next }), { coalesceKey: `appearance.${field}`, noRebuild: true });
   showOriginalMaterials();
 }
@@ -239,10 +260,13 @@ export function setFeatureParam(id, key, value) {
   const feature = get().features.find((f) => f.id === id);
   if (!feature) return;
   const spec = FEATURE_TYPES[feature.type].params.find((p) => p.key === key);
-  const next = isFormula(value) && spec?.kind !== 'choice' ? { expr: value.expr } : clampParam(feature.type, key, value);
+  const next =
+    isFormula(value) && spec?.kind !== 'choice' ? { expr: value.expr } : clampParam(feature.type, key, value);
   change(
     `Change ${spec?.label ?? key}`,
-    ({ features }) => ({ features: features.map((f) => (f.id === id ? { ...f, params: { ...f.params, [key]: next } } : f)) }),
+    ({ features }) => ({
+      features: features.map((f) => (f.id === id ? { ...f, params: { ...f.params, [key]: next } } : f)),
+    }),
     { coalesceKey: `${id}.${key}` },
   );
 }
@@ -265,7 +289,9 @@ export function removeParameter(id) {
 export function setParameterExpression(id, expression) {
   change(
     'Change parameter',
-    ({ parameters }) => ({ parameters: parameters.map((p) => (p.id === id ? { ...p, expression: String(expression) } : p)) }),
+    ({ parameters }) => ({
+      parameters: parameters.map((p) => (p.id === id ? { ...p, expression: String(expression) } : p)),
+    }),
     { coalesceKey: `${id}.expression` },
   );
 }
@@ -280,9 +306,7 @@ export function renameParameter(id, name) {
   change(
     'Rename parameter',
     ({ parameters, features }) => ({
-      parameters: parameters.map((p) =>
-        p.id === id ? { ...p, name } : { ...p, expression: rename(p.expression) },
-      ),
+      parameters: parameters.map((p) => (p.id === id ? { ...p, name } : { ...p, expression: rename(p.expression) })),
       features: features.map((f) => ({
         ...f,
         params: Object.fromEntries(
@@ -352,7 +376,10 @@ export function refitDesign() {
 // ---- files ---------------------------------------------------------------------------
 
 function fileName(extension) {
-  const base = get().name.replace(/[^\w.-]+/g, '_').replace(/^_+|_+$/g, '') || 'part';
+  const base =
+    get()
+      .name.replace(/[^\w.-]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'part';
   return `${base}.${extension}`;
 }
 
@@ -381,9 +408,13 @@ export async function openDesignFile(file) {
     const raw = JSON.parse(await file.text());
     if (raw.format !== FILE_FORMAT) throw new Error('Not a HoloCAD design file');
     const design = normaliseDesign(raw);
-    change(`Open ${design.name}`, () => ({ ...design, selectedFeatureId: design.features[0].id, message: `Opened ${file.name}` }), {
-      rebuildNow: true,
-    });
+    change(
+      `Open ${design.name}`,
+      () => ({ ...design, selectedFeatureId: design.features[0].id, message: `Opened ${file.name}` }),
+      {
+        rebuildNow: true,
+      },
+    );
     set({ frame: null });
     rebuild({ fit: true });
   } catch (error) {

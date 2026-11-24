@@ -94,12 +94,18 @@ describe('building parts', () => {
 
   it('cuts pockets, adds bosses, shells', () => {
     const block = makeFeature('box', { length: 100, width: 100, height: 20 });
-    expect(volumeOf([block, makeFeature('pocket', { length: 40, width: 20, depth: 5 })]).volume).toBeCloseTo(200_000 - 4000, 2);
+    expect(volumeOf([block, makeFeature('pocket', { length: 40, width: 20, depth: 5 })]).volume).toBeCloseTo(
+      200_000 - 4000,
+      2,
+    );
     expect(volumeOf([block, makeFeature('boss', { diameter: 20, height: 10 })]).volume).toBeCloseTo(
       200_000 + Math.PI * 100 * 10,
       2,
     );
-    const cup = volumeOf([makeFeature('box', { length: 50, width: 50, height: 30 }), makeFeature('shell', { thickness: 2 })]);
+    const cup = volumeOf([
+      makeFeature('box', { length: 50, width: 50, height: 30 }),
+      makeFeature('shell', { thickness: 2 }),
+    ]);
     expect(cup.volume).toBeCloseTo(50 * 50 * 30 - 46 * 46 * 28, 1); // walls and floor 2 mm, open top
   });
 
@@ -168,7 +174,12 @@ describe('STEP assemblies', () => {
     // The pin lying on its side (a quarter turn about the viewer's X), 200 mm along X.
     const placement = turned({ position: [0.2, 0, 0], quaternion: [0, 0, 0, 1] }, [1, 0, 0], 90);
     const { blob, skipped } = assemblyStep(r, [
-      { name: 'Plate', color: '#b9c0c7', features: plate, ...cadTransform({ position: [0, 0, 0], quaternion: [0, 0, 0, 1] }) },
+      {
+        name: 'Plate',
+        color: '#b9c0c7',
+        features: plate,
+        ...cadTransform({ position: [0, 0, 0], quaternion: [0, 0, 0, 1] }),
+      },
       { name: 'Pin', color: '#c9a441', features: pin, ...cadTransform(placement) },
       { name: 'Nothing', color: '#ffffff', features: [] },
     ]);

@@ -88,7 +88,8 @@ export async function loadFaces(modelId, { fetchImpl = fetch } = {}) {
 }
 
 const sameItem = (a, b) =>
-  a === b || (a && b && a.partId === b.partId && a.kind === b.kind && a.index === b.index && a.x === b.x && a.y === b.y);
+  a === b ||
+  (a && b && a.partId === b.partId && a.kind === b.kind && a.index === b.index && a.x === b.x && a.y === b.y);
 
 // item: { partId, specIndex, kind, index } plus the cursor's x, y; or null.
 export function setInspectHover(item) {
