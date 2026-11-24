@@ -5,10 +5,28 @@ import { pickPartAt } from '../scene/picking';
 import { POSE, PoseDebouncer, classifyPose } from './handPose';
 import { createClapDetector } from './clapDetector';
 import { screenToNdc } from './projection';
+import { setInteractionActive } from '../actions/history';
+import { beginHandleDrag, endHandleDrag, moveHandleDrag } from '../actions/handleDrag';
+import { undoHere } from '../actions/commands';
+import {
+  clickAt,
+  doubleClickAt,
+  hudTargetAt,
+  isSlider,
+  pressHud,
+  scrollHud,
+  setHandHover,
+  slideHud,
+} from '../input/handCursor';
 
 // Turns per-frame hands into viewer actions. One explicit state at a time; each
 // state decides when it ends. Never touches three.js — only calls viewerActions
 // (and asks the scene's picker which part is under a screen point).
+//
+// Every hand is also a cursor at its pinch point. A quick pinch is an air tap: on the
+// HUD it presses what's there (input/handCursor.js), on the scene it's a mouse click,
+// so anything you can click you can tap. Tapping twice fast is a double-click; tapping
+// with the other palm open adds to the selection, like Shift.
 
 export const STATE = {
   IDLE: 'IDLE',
@@ -17,7 +35,10 @@ export const STATE = {
   SCALING: 'SCALING',
   EXPLODING: 'EXPLODING',
   HOLDING_PART: 'HOLDING_PART',
+  DRAGGING_HANDLE: 'DRAGGING_HANDLE',
   MENU: 'MENU',
+  PINCHING: 'PINCHING', // pinched over the scene: a tap, a hold (menu) or a pull?
+  HUD_PRESS: 'HUD_PRESS', // pinched over the HUD: a tap presses, a drag scrolls or slides
 };
 
 const DEG = Math.PI / 180;
@@ -87,8 +108,30 @@ function partUnderPinch(hand, frame) {
   return pickPartAt(ndc.x, ndc.y);
 }
 
+// --- Taps ----------------------------------------------------------------------------
+
+const isTap = (data, nowMs) => !data.moved && nowMs - data.since <= GESTURE.tapMaxMs;
+const movedFar = (hand, start) => screenDistance(hand.pinchScreen, start) > GESTURE.tapMaxMove * hand.palmSizeScreen;
+
+// An air tap on the scene at a screen point. The other hand held open makes it additive.
+// frame.taps.last remembers the previous tap ({ x, y, ms }) for double taps.
+function tapScene(point, frame, handId) {
+  const { last } = frame.taps;
+  const double =
+    last && frame.nowMs - last.ms <= GESTURE.doubleTapMs && screenDistance(point, last) <= GESTURE.doubleTapPx;
+  frame.taps.last = double ? null : { x: point.x, y: point.y, ms: frame.nowMs };
+  if (double) {
+    doubleClickAt(point.x, point.y);
+    return;
+  }
+  const additive = frame.tracked.some((t) => t.hand.id !== handId && t.pose === POSE.OPEN);
+  clickAt(point.x, point.y, { additive });
+}
+
+const overHud = (point) => hudTargetAt(point.x, point.y);
+
 const idle = {
-  enter: () => ({ scaleArmedSince: null, pinch: null }),
+  enter: () => ({ scaleArmedSince: null }),
 
   update(data, frame) {
     const fists = withPose(frame, POSE.FIST);
@@ -98,19 +141,16 @@ const idle = {
 
     if (fists.length === 2) return go(STATE.EXPLODING, 'spread', fists[0].hand, fists[1].hand);
 
-    // Pinch: grab a part if exploded and one is under the fingers, otherwise
-    // holding the pinch on empty space opens the menu.
+    // A pinch starts as whatever is under it: the HUD, a design handle (or, in
+    // ASSEMBLE, a part to drag), or the scene.
     const pincher = pinches[0];
-    if (!pincher) {
-      data.pinch = null;
-    } else if (data.pinch?.handId !== pincher.hand.id) {
-      data.pinch = { handId: pincher.hand.id, since: frame.nowMs };
-      if (actions.isExploded()) {
-        const partId = partUnderPinch(pincher.hand, frame);
-        if (partId) return go(STATE.HOLDING_PART, pincher.hand, partId, frame.nowMs);
-      }
-    } else if (frame.nowMs - data.pinch.since >= GESTURE.menuHoldMs) {
-      return go(STATE.MENU, pincher.hand);
+    if (pincher) {
+      const { hand } = pincher;
+      const hud = overHud(hand.pinchScreen);
+      if (hud) return go(STATE.HUD_PRESS, hand, hud, frame.nowMs);
+      if (beginHandleDrag(hand.pinchScreen.x, hand.pinchScreen.y)) return go(STATE.DRAGGING_HANDLE, hand, frame.nowMs);
+      const partId = actions.isExploded() ? partUnderPinch(hand, frame) : null;
+      return go(STATE.PINCHING, hand, frame.nowMs, partId);
     }
 
     const bothStill = opens.length === 2 && opens.every((t) => t.motion.palmSpeed < GESTURE.stillMaxSpeed);
@@ -125,9 +165,77 @@ const idle = {
 
     if (fists.length === 1) return go(STATE.MOVING, fists[0].hand);
 
+    // Pointing at the HUD is aiming, not turning the model.
     const pointer = withPose(frame, POSE.POINT)[0];
-    if (pointer) return go(STATE.SPINNING, pointer.hand);
+    if (pointer && !overHud(pointer.hand.indexTipScreen)) return go(STATE.SPINNING, pointer.hand);
 
+    return null;
+  },
+};
+
+// Pinched over the scene. Let go quickly: a tap (click). Hold still: the radial menu,
+// or, on a part of an exploded model, pick it up. Move: pull that part out.
+const pinching = {
+  enter(hand, nowMs, partId) {
+    return {
+      handIds: [hand.id],
+      start: { ...hand.pinchScreen },
+      startWorld: { ...hand.pinchWorld },
+      since: nowMs,
+      partId,
+      moved: false,
+      hold: 0,
+    };
+  },
+
+  update(data, frame) {
+    const holder = findHand(frame, data.handIds[0]);
+    if (!holder || !holder.hand.pinching) {
+      if (holder && isTap(data, frame.nowMs)) tapScene(data.start, frame, holder.hand.id);
+      return go(STATE.IDLE);
+    }
+    const { hand } = holder;
+    const elapsed = frame.nowMs - data.since;
+    if (!data.moved && movedFar(hand, data.start)) data.moved = true;
+    if (data.partId && (data.moved || elapsed >= GESTURE.menuHoldMs)) {
+      return go(STATE.HOLDING_PART, hand, data.partId, data.since, data.startWorld);
+    }
+    data.hold = data.moved ? 0 : Math.min(1, elapsed / GESTURE.menuHoldMs);
+    if (!data.moved && elapsed >= GESTURE.menuHoldMs) return go(STATE.MENU, hand, data.start, data.startWorld);
+    return null; // moved over empty space: nothing until it opens
+  },
+};
+
+// Pinched over the HUD. Let go without moving: press it (any length of press counts).
+// Drag: a slider follows the hand; anything else scrolls its panel.
+const hudPress = {
+  enter(hand, target, nowMs) {
+    const slider = isSlider(target.interactive);
+    if (slider) slideHud(target.interactive, hand.pinchScreen.x);
+    return {
+      handIds: [hand.id],
+      target,
+      start: { ...hand.pinchScreen },
+      last: { ...hand.pinchScreen },
+      since: nowMs,
+      mode: slider ? 'slide' : null,
+    };
+  },
+
+  update(data, frame) {
+    const holder = findHand(frame, data.handIds[0]);
+    if (!holder || !holder.hand.pinching) {
+      if (holder && !data.mode) pressHud(data.target, data.start.x, data.start.y);
+      return go(STATE.IDLE);
+    }
+    const { hand } = holder;
+    if (!data.mode && movedFar(hand, data.start)) data.mode = 'scroll';
+    if (data.mode === 'slide') slideHud(data.target.interactive, hand.pinchScreen.x);
+    if (data.mode === 'scroll') {
+      const dx = (hand.pinchScreen.x - data.last.x) * GESTURE.scrollGain;
+      scrollHud(data.target.element, dx, (hand.pinchScreen.y - data.last.y) * GESTURE.scrollGain);
+    }
+    Object.assign(data.last, hand.pinchScreen);
     return null;
   },
 };
@@ -192,6 +300,10 @@ const spinning = {
     if (!pointer || pointer.pose !== POSE.POINT) return go(STATE.IDLE);
 
     const { hand } = pointer;
+    if (overHud(hand.indexTipScreen)) {
+      Object.assign(data.lastTip, hand.indexTipScreen); // aiming at a button; hold still
+      return null;
+    }
     if (pointer.rawPose === POSE.POINT) {
       const dx = (hand.indexTipScreen.x - data.lastTip.x) / hand.palmSizeScreen;
       const dy = (hand.indexTipScreen.y - data.lastTip.y) / hand.palmSizeScreen;
@@ -287,12 +399,12 @@ const exploding = {
 
 // A pinched part follows the pinch point; after a moment its info card appears.
 const holdingPart = {
-  enter(hand, partId, nowMs) {
+  enter(hand, partId, nowMs, startPinch = hand.pinchWorld) {
     actions.selectPart(partId);
     return {
       handIds: [hand.id],
       partId,
-      startPinch: { ...hand.pinchWorld },
+      startPinch: { ...startPinch },
       since: nowMs,
       infoShown: false,
     };
@@ -317,19 +429,71 @@ const holdingPart = {
   },
 };
 
+// A pinched design handle (in ASSEMBLE, a part) follows the pinch until it opens; one
+// undo step. A quick tap that moved nothing is a click: it selects that part.
+const draggingHandle = {
+  enter(hand, nowMs) {
+    return { handIds: [hand.id], start: { ...hand.pinchScreen }, since: nowMs, moved: false };
+  },
+
+  update(data, frame) {
+    const holder = findHand(frame, data.handIds[0]);
+    if (!holder || !holder.hand.pinching) {
+      const changed = endHandleDrag();
+      if (holder && !changed && isTap(data, frame.nowMs)) tapScene(data.start, frame, holder.hand.id);
+      return go(STATE.IDLE);
+    }
+    if (!data.moved && movedFar(holder.hand, data.start)) data.moved = true;
+    moveHandleDrag(holder.hand.pinchScreen.x, holder.hand.pinchScreen.y);
+    return null;
+  },
+};
+
 // Radial menu around the pinch point: move the pinch toward an item, release to run it.
-const MENU_ITEMS = [
-  { id: 'explode', angle: -90, label: () => (actions.isExploded() ? 'ASSEMBLE' : 'EXPLODE') },
-  { id: 'reset', angle: 0, label: () => 'RESET' },
-  { id: 'material', angle: 90, label: () => 'MATERIAL' },
-  { id: 'spawn', angle: 180, label: () => 'SPAWN HERE' },
+// Items read the moment: with parts selected they act on them, otherwise on everything.
+const hasSelection = () => useViewerStore.getState().selectedPartIds.length > 0;
+
+export const MENU_ITEMS = [
+  {
+    id: 'explode',
+    angle: -90,
+    label: () => (actions.isExploded() ? 'ASSEMBLE' : 'EXPLODE'),
+    run: () => actions.toggleExplode(),
+  },
+  {
+    id: 'select',
+    angle: -45,
+    label: () => (hasSelection() ? 'DESELECT' : 'SELECT ALL'),
+    run: () => (hasSelection() ? actions.clearSelection() : actions.selectAll()),
+  },
+  {
+    id: 'fit',
+    angle: 0,
+    label: () => (hasSelection() ? 'FIT SELECTION' : 'FIT ALL'),
+    run: () => (hasSelection() ? actions.fitToSelection() : actions.fitToView()),
+  },
+  {
+    id: 'isolate',
+    angle: 45,
+    label: () => (hasSelection() ? 'ISOLATE' : 'SHOW ALL'),
+    run: () => (hasSelection() ? actions.isolateParts() : actions.showAllParts()),
+  },
+  { id: 'material', angle: 90, label: () => 'MATERIAL', run: () => actions.toggleMaterialMode() },
+  {
+    id: 'hide',
+    angle: 135,
+    label: () => (hasSelection() ? 'HIDE' : 'SPAWN HERE'),
+    run: (data) =>
+      hasSelection()
+        ? actions.hideParts()
+        : actions.spawnAt(data.centerWorld.x, data.centerWorld.y, data.centerWorld.z),
+  },
+  { id: 'undo', angle: 180, label: () => 'UNDO', run: () => undoHere() },
+  { id: 'reset', angle: -135, label: () => 'RESET', run: () => actions.resetModel() },
 ];
 
 function runMenuItem(id, data) {
-  if (id === 'explode') actions.toggleExplode();
-  if (id === 'reset') actions.resetModel();
-  if (id === 'material') actions.toggleMaterialMode();
-  if (id === 'spawn') actions.spawnAt(data.centerWorld.x, data.centerWorld.y, data.centerWorld.z);
+  MENU_ITEMS.find((item) => item.id === id)?.run(data);
 }
 
 function highlightedItem(center, point) {
@@ -337,16 +501,16 @@ function highlightedItem(center, point) {
   const dy = point.y - center.y;
   if (Math.hypot(dx, dy) < GESTURE.menuSelectMinPx) return null;
   const angle = Math.atan2(dy, dx) / DEG;
-  const nearest = MENU_ITEMS.find((item) => Math.abs(wrapAngle((angle - item.angle) * DEG)) <= 45 * DEG);
+  const half = 180 / MENU_ITEMS.length;
+  const nearest = MENU_ITEMS.find((item) => Math.abs(wrapAngle((angle - item.angle) * DEG)) <= half * DEG);
   return nearest?.id ?? null;
 }
 
 const menu = {
-  enter(hand) {
-    const center = { ...hand.pinchScreen };
+  enter(hand, center = hand.pinchScreen, centerWorld = hand.pinchWorld) {
     return {
       handIds: [hand.id],
-      centerWorld: { ...hand.pinchWorld },
+      centerWorld: { ...centerWorld },
       menu: {
         x: center.x,
         y: center.y,
@@ -377,17 +541,21 @@ const STATES = {
   [STATE.SCALING]: scaling,
   [STATE.EXPLODING]: exploding,
   [STATE.HOLDING_PART]: holdingPart,
+  [STATE.DRAGGING_HANDLE]: draggingHandle,
   [STATE.MENU]: menu,
+  [STATE.PINCHING]: pinching,
+  [STATE.HUD_PRESS]: hudPress,
 };
 
 // Clap is checked alongside the state machine, except while the hands are busy.
-const CLAP_BLOCKED = new Set([STATE.HOLDING_PART, STATE.MENU]);
+const CLAP_BLOCKED = new Set([STATE.HOLDING_PART, STATE.DRAGGING_HANDLE, STATE.MENU, STATE.PINCHING, STATE.HUD_PRESS]);
 
 // --- Engine ----------------------------------------------------------------
 
 export function createGestureEngine() {
   const motions = new Map(); // hand id -> motion
   const clap = createClapDetector();
+  const taps = { last: null };
   let state = STATE.IDLE;
   let data = idle.enter();
 
@@ -412,6 +580,8 @@ export function createGestureEngine() {
   function transition(next) {
     state = next.name;
     data = STATES[state].enter(...next.args);
+    // A whole gesture (grab → move → release) becomes one undo step.
+    setInteractionActive('gesture', state !== STATE.IDLE);
   }
 
   function handleClap(hands, nowMs) {
@@ -425,13 +595,31 @@ export function createGestureEngine() {
 
   return {
     update(hands, nowMs, screenWidth, screenHeight) {
-      const frame = { tracked: trackHands(hands, nowMs), nowMs, screenWidth, screenHeight };
+      const frame = { tracked: trackHands(hands, nowMs), nowMs, screenWidth, screenHeight, taps };
       if (!handleClap(hands, nowMs)) {
         const next = STATES[state].update(data, frame);
         if (next) transition(next);
       }
+      // Outline what a tap would press, under the hand in control (or the first free one).
+      const aiming =
+        (data.handIds && findHand(frame, data.handIds[0])) ??
+        frame.tracked.find((t) => t.pose !== POSE.FIST && t.pose !== POSE.OPEN);
+      const canAim = state === STATE.IDLE || state === STATE.PINCHING || state === STATE.HUD_PRESS;
+      if (canAim && aiming) setHandHover(aiming.hand.pinchScreen.x, aiming.hand.pinchScreen.y);
+      else setHandHover(null);
       return {
         state,
+        cursors: frame.tracked.map((t) => ({
+          id: t.hand.id,
+          x: t.hand.pinchScreen.x,
+          y: t.hand.pinchScreen.y,
+          handedness: t.hand.handedness,
+          pose: t.pose,
+          pinching: t.hand.pinching,
+          active: (data.handIds ?? []).includes(t.hand.id),
+          // How far a held pinch is toward opening the menu, 0..1.
+          hold: state === STATE.PINCHING && data.handIds[0] === t.hand.id ? data.hold : 0,
+        })),
         activeHandIds: data.handIds ?? [],
         poses: Object.fromEntries(frame.tracked.map((t) => [t.hand.id, t.pose])),
         menu: state === STATE.MENU ? data.menu : null,
@@ -442,8 +630,11 @@ export function createGestureEngine() {
     reset() {
       motions.clear();
       clap.reset();
+      taps.last = null;
+      setHandHover(null);
       state = STATE.IDLE;
       data = idle.enter();
+      setInteractionActive('gesture', false);
     },
   };
 }

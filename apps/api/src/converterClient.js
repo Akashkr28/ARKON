@@ -12,6 +12,16 @@ export class ConverterError extends Error {
 }
 
 // The converter speaks snake_case (Python); the rest of the API uses camelCase.
+const camel = (key) => key.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+
+export function camelizeKeys(value) {
+  if (Array.isArray(value)) return value.map(camelizeKeys);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [camel(k), camelizeKeys(v)]));
+  }
+  return value;
+}
+
 function normalizeResult(body) {
   return {
     glbBytes: body.glb_bytes,
@@ -25,6 +35,7 @@ function normalizeResult(body) {
       parentName: part.parent_name ?? null,
       triangleCount: part.triangle_count,
       color: part.color ?? null,
+      spec: part.spec ? camelizeKeys(part.spec) : null,
     })),
   };
 }

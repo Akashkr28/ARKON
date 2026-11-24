@@ -3,15 +3,7 @@ import { useHandStore } from '../store/handStore';
 import { useViewerStore } from '../store/viewerStore';
 import { LandmarkFilter } from './smoothing';
 import { assignSlots, pruneSlots } from './handIdentity';
-import {
-  INDEX_TIP,
-  distanceMetres,
-  openness,
-  palmCenter,
-  palmSize,
-  pinchPoint,
-  pinchState,
-} from './handMetrics';
+import { INDEX_TIP, distanceMetres, openness, palmCenter, palmSize, pinchPoint, pinchState } from './handMetrics';
 import { createViewportMapping, screenToPlane, videoToScreen } from './projection';
 import { createGestureEngine } from './gestureEngine';
 
@@ -135,13 +127,7 @@ export function processResult(result, video, inferenceMs, nowMs) {
     timeSeconds: nowMs / 1000,
   };
 
-  const matched = assignSlots(
-    toDetections(result),
-    slots,
-    frame.videoWidth,
-    frame.videoHeight,
-    createSlot,
-  );
+  const matched = assignSlots(toDetections(result), slots, frame.videoWidth, frame.videoHeight, createSlot);
   const hands = matched.map(([slot, detection]) => {
     slot.lastSeenMs = nowMs;
     updateHand(slot, detection, frame);
@@ -149,12 +135,7 @@ export function processResult(result, video, inferenceMs, nowMs) {
   });
   pruneSlots(slots, nowMs);
 
-  const gesture = gestureEngine.update(
-    hands,
-    nowMs,
-    frame.mapping.screenWidth,
-    frame.mapping.screenHeight,
-  );
+  const gesture = gestureEngine.update(hands, nowMs, frame.mapping.screenWidth, frame.mapping.screenHeight);
 
   updateTimings(nowMs, inferenceMs);
   useHandStore.setState((state) => ({
@@ -163,6 +144,7 @@ export function processResult(result, video, inferenceMs, nowMs) {
     activeHandIds: gesture.activeHandIds,
     poses: gesture.poses,
     menu: gesture.menu,
+    cursors: gesture.cursors,
     flickSpeed: gesture.flickSpeed,
     frame: state.frame + 1,
     trackFps: fpsEstimate,
@@ -185,6 +167,8 @@ export function resetPipeline() {
     activeHandIds: [],
     poses: {},
     menu: null,
+    cursors: [],
+    picker: null,
     flickSpeed: null,
   });
 }

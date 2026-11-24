@@ -13,6 +13,7 @@ dependencies = [
 dev = [
   "pytest>=8.3",
   "httpx>=0.28",
+  "ruff>=0.17.6",
 ]
 
 [tool.uv]
@@ -26,3 +27,13 @@ filterwarnings = [
   # we haven't vetted the suggested replacement package.
   "ignore:Using `httpx` with `starlette.testclient` is deprecated",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle, import order, bugbear, pyupgrade
+select = ["F", "E", "W", "I", "B", "UP"]
+# Line length is the formatter's call; long comments and strings may run over.
+ignore = ["E501"]

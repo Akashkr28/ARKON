@@ -1,14 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import {
-  AdditiveBlending,
-  Color,
-  DoubleSide,
-  Group,
-  Mesh,
-  MeshBasicMaterial,
-  RingGeometry,
-} from 'three';
+import { AdditiveBlending, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, RingGeometry } from 'three';
 import { useHandStore } from '../store/handStore';
 import { useViewerStore } from '../store/viewerStore';
 import { RINGS, VIEW } from '../config';
@@ -62,7 +54,19 @@ function createRig() {
   const pulse = addMesh(root, geometries.pulse, pulseMaterial);
   pulse.visible = false;
 
-  return { root, palm, spinner, inner, tip, pulse, material, pulseMaterial, handId: null, wasPinching: false, pulseStart: -Infinity };
+  return {
+    root,
+    palm,
+    spinner,
+    inner,
+    tip,
+    pulse,
+    material,
+    pulseMaterial,
+    handId: null,
+    wasPinching: false,
+    pulseStart: -Infinity,
+  };
 }
 
 // Keep each rig attached to the same physical hand across frames.

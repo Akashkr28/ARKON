@@ -7,6 +7,7 @@ import { createConversionWorker } from '../src/worker.js';
 import {
   STEP_TEXT,
   fakeConverter,
+  FAKE_FACES,
   freshTestDatabase,
   makeGlb,
   silentLog,
@@ -95,6 +96,31 @@ describe.skipIf(!testDatabaseUrl)('models API (against DATABASE_URL_TEST)', () =
       expect(file.body.subarray(0, 4).toString()).toBe('glTF');
     });
 
+    it('serves the measured part specs once converted', async () => {
+      const { body } = await uploadStep();
+      expect((await request(app).get(`/api/models/${body.id}/specs`)).status).toBe(409);
+
+      await worker.processNext();
+      const res = await request(app).get(`/api/models/${body.id}/specs`);
+      expect(res.status).toBe(200);
+      expect(res.body.units).toMatchObject({ length: 'mm', volume: 'mm3' });
+      expect(res.body.parts).toEqual([
+        {
+          index: 0,
+          name: 'Base plate',
+          spec: { partNumber: 'BP-1001', overallSizeMm: [140, 80, 8], volumeMm3: 89600 },
+        },
+      ]);
+      // Face data for the inspector, beside the GLB.
+      const faces = await request(app).get(`/api/models/${body.id}/faces`);
+      expect(faces.status).toBe(200);
+      expect(faces.body).toEqual(FAKE_FACES);
+
+      // The model detail stays light: no specs in it.
+      const detail = await request(app).get(`/api/models/${body.id}`);
+      expect(detail.body.parts[0].spec).toBeUndefined();
+    });
+
     it('accepts .stp and a custom name', async () => {
       const res = await uploadStep('PART.STP', { name: '  Pump housing  ' });
       expect(res.status).toBe(201);
@@ -154,9 +180,7 @@ describe.skipIf(!testDatabaseUrl)('models API (against DATABASE_URL_TEST)', () =
 
   describe('uploading a GLB', () => {
     it('is ready immediately, with parts read from the file', async () => {
-      const res = await request(app)
-        .post('/api/models')
-        .attach('file', makeGlb(), 'scan.glb');
+      const res = await request(app).post('/api/models').attach('file', makeGlb(), 'scan.glb');
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ sourceFormat: 'glb', status: 'ready', partCount: 2, triangleCount: 16 });
 
@@ -167,6 +191,13 @@ describe.skipIf(!testDatabaseUrl)('models API (against DATABASE_URL_TEST)', () =
       ]);
       expect(detail.body.job).toBeNull();
       expect(await worker.processNext()).toBe(false); // nothing to convert
+    });
+
+    it('has no face data', async () => {
+      const { body } = await request(app).post('/api/models').attach('file', makeGlb(), 'a.glb');
+      const res = await request(app).get(`/api/models/${body.id}/faces`);
+      expect(res.status).toBe(404);
+      expect(res.body.error).toMatch(/GLB/);
     });
 
     it('cannot be "re-converted"', async () => {
@@ -237,10 +268,11 @@ describe.skipIf(!testDatabaseUrl)('models API (against DATABASE_URL_TEST)', () =
       await worker.processNext();
       const source = storage.absolute(`uploads/${body.id}.step`);
       const glb = storage.absolute(`models/${body.id}.glb`);
-      expect(existsSync(source) && existsSync(glb)).toBe(true);
+      const faces = storage.absolute(`models/${body.id}.faces.json`);
+      expect(existsSync(source) && existsSync(glb) && existsSync(faces)).toBe(true);
 
       expect((await request(app).delete(`/api/models/${body.id}`)).status).toBe(204);
-      expect(existsSync(source) || existsSync(glb)).toBe(false);
+      expect(existsSync(source) || existsSync(glb) || existsSync(faces)).toBe(false);
       expect((await request(app).get(`/api/models/${body.id}`)).status).toBe(404);
     });
 

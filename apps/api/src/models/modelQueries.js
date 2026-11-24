@@ -32,8 +32,8 @@ export async function replaceParts(db, modelId, parts) {
   await db.query('delete from model_parts where model_id = $1', [modelId]);
   if (parts.length === 0) return;
   await db.query(
-    `insert into model_parts (model_id, part_index, name, parent_name, triangle_count, color)
-     select $1, * from unnest($2::int[], $3::text[], $4::text[], $5::int[], $6::text[])`,
+    `insert into model_parts (model_id, part_index, name, parent_name, triangle_count, color, spec)
+     select $1, * from unnest($2::int[], $3::text[], $4::text[], $5::int[], $6::text[], $7::jsonb[])`,
     [
       modelId,
       parts.map((p) => p.index),
@@ -41,30 +41,37 @@ export async function replaceParts(db, modelId, parts) {
       parts.map((p) => p.parentName ?? null),
       parts.map((p) => p.triangleCount),
       parts.map((p) => p.color ?? null),
+      parts.map((p) => (p.spec ? JSON.stringify(p.spec) : null)),
     ],
   );
 }
 
 export async function enqueueConversion(db, modelId, quality) {
   await db.query(`update models set status = 'queued', error = null where id = $1`, [modelId]);
-  const { rows } = await db.query(
-    `insert into conversion_jobs (model_id, quality) values ($1, $2) returning id`,
-    [modelId, quality],
-  );
+  const { rows } = await db.query(`insert into conversion_jobs (model_id, quality) values ($1, $2) returning id`, [
+    modelId,
+    quality,
+  ]);
   return rows[0].id;
 }
 
 export async function listModels(db, { limit = 100 } = {}) {
-  const { rows } = await db.query(
-    `select ${MODEL_COLUMNS} from models order by created_at desc, id limit $1`,
-    [limit],
-  );
+  const { rows } = await db.query(`select ${MODEL_COLUMNS} from models order by created_at desc, id limit $1`, [limit]);
   return rows;
 }
 
 export async function findModel(db, id) {
   const { rows } = await db.query(`select ${MODEL_COLUMNS} from models where id = $1`, [id]);
   return rows[0] ?? null;
+}
+
+// Kept out of findParts: specs can run to a few KB per part, and only the spec sheet needs them.
+export async function findPartSpecs(db, modelId) {
+  const { rows } = await db.query(
+    `select part_index, name, spec from model_parts where model_id = $1 order by part_index`,
+    [modelId],
+  );
+  return rows;
 }
 
 export async function findParts(db, modelId) {
@@ -86,10 +93,7 @@ export async function findLatestJob(db, modelId) {
 }
 
 export async function deleteModel(db, id) {
-  const { rows } = await db.query(
-    `delete from models where id = $1 returning source_path, glb_path`,
-    [id],
-  );
+  const { rows } = await db.query(`delete from models where id = $1 returning source_path, glb_path`, [id]);
   return rows[0] ?? null;
 }
 
@@ -137,18 +141,16 @@ export async function completeConversion(db, { jobId, modelId, glbPath, result }
 }
 
 export async function failConversion(db, { jobId, modelId, userMessage, detail }) {
-  await db.query(`update models set status = 'failed', error = $2 where id = $1`, [
-    modelId,
-    userMessage,
-  ]);
+  await db.query(`update models set status = 'failed', error = $2 where id = $1`, [modelId, userMessage]);
   await finishJob(db, jobId, 'failed', detail);
 }
 
 export async function finishJob(db, jobId, status, error) {
-  await db.query(
-    `update conversion_jobs set status = $2, error = $3, finished_at = now() where id = $1`,
-    [jobId, status, error],
-  );
+  await db.query(`update conversion_jobs set status = $2, error = $3, finished_at = now() where id = $1`, [
+    jobId,
+    status,
+    error,
+  ]);
 }
 
 // Puts a claimed job back in the queue without counting it as an attempt

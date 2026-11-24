@@ -6,9 +6,35 @@ const base = import.meta.env.BASE_URL;
 // are uploaded through the LIBRARY panel (or dropped onto the window) instead.
 // The first entry is what opens on startup.
 export const MODELS = [
-  { id: 'exosuit', label: 'Sentinel Mk I Exosuit', url: `${base}models/SentinelExosuit.glb` },
-  { id: 'engine', label: '2-Cylinder Engine', url: `${base}models/2CylinderEngine.glb` },
-  { id: 'gearbox', label: 'Gearbox Assembly', url: `${base}models/GearboxAssy.glb` },
+  {
+    id: 'aster',
+    label: 'Aster C1 (compact car)',
+    url: `${base}models/AsterC1.glb`,
+    // Measured part specs, written by the converter beside the GLB (see ATTRIBUTION.md).
+    specsUrl: `${base}models/AsterC1.specs.json`,
+    facesUrl: `${base}models/AsterC1.faces.json`, // CAD faces and edges, for the inspector
+  },
+];
+
+// Materials for the spec sheet's mass calculation; density in kg/m³. A part's material
+// from the CAD file is offered first; these are for parts without one, or what-ifs.
+// color / metal: how a part in this material looks when you don't choose otherwise.
+export const MATERIAL_LIBRARY = [
+  { id: 'steel', name: 'Steel (structural)', density: 7850, color: '#8a9097', metal: true },
+  { id: 'stainless', name: 'Stainless steel 304', density: 8000, color: '#c3c8cc', metal: true },
+  { id: 'cast-iron', name: 'Grey cast iron', density: 7200, color: '#5d6166', metal: true },
+  { id: 'aluminium', name: 'Aluminium 6061', density: 2700, color: '#b9c0c7', metal: true },
+  { id: 'titanium', name: 'Titanium Ti-6Al-4V', density: 4430, color: '#8f8a85', metal: true },
+  { id: 'brass', name: 'Brass', density: 8500, color: '#c9a441', metal: true },
+  { id: 'copper', name: 'Copper', density: 8960, color: '#c27a4a', metal: true },
+  { id: 'abs', name: 'ABS', density: 1050, color: '#e8e4da', metal: false },
+  { id: 'pla', name: 'PLA', density: 1240, color: '#3b82c4', metal: false },
+  { id: 'nylon', name: 'Nylon PA6', density: 1140, color: '#ece8dc', metal: false },
+  { id: 'polycarbonate', name: 'Polycarbonate', density: 1200, color: '#d9e6ee', metal: false },
+  { id: 'rubber', name: 'Rubber', density: 1150, color: '#26282a', metal: false },
+  { id: 'glass', name: 'Glass', density: 2500, color: '#a9d6e5', metal: false },
+  { id: 'cfrp', name: 'Carbon fibre composite', density: 1600, color: '#2d3035', metal: false },
+  { id: 'oak', name: 'Wood (oak)', density: 750, color: '#a87b4f', metal: false },
 ];
 
 export const LIBRARY = {
@@ -78,8 +104,16 @@ export const VIEW = {
   cameraZ: 5,
   // Every model is scaled so its bounding sphere has this radius (scene units).
   modelRadius: 1,
-  minScale: 0.25,
-  maxScale: 4,
+  // Zoom range (the model is scaled; the camera stays put).
+  minScale: 0.1,
+  maxScale: 20, // at least; real models may zoom further (closestViewMetres)
+  // Zooming stops when this much of the model (metres) fills the screen height at the
+  // model's depth: 2 mm, enough to read a thread or a small fillet on a 4 m car.
+  closestViewMetres: 0.002,
+  // Ruler grid (G): cells about this many pixels wide at the hovered depth; a brighter
+  // line every 10 cells; this many cells each side of the centre.
+  gridCellPx: 40,
+  gridHalfCells: 30,
   maxExplode: 1.5,
   // Higher = snappier. Used as 1 - exp(-damping * dt) so it's frame-rate independent.
   transformDamping: 12,
@@ -91,6 +125,25 @@ export const VIEW = {
   pullDamping: 14,
   // Picking also tries points this far (in NDC) around the pinch, for thin parts.
   pickRadiusNdc: 0.025,
+};
+
+// Measuring: snap radius in screen pixels, and what counts as a real edge.
+export const MEASURE = {
+  snapVertexPx: 10,
+  snapEdgePx: 7,
+  // Inspector (SPECS tab open): a CAD edge this close to the cursor is picked over the face.
+  inspectEdgePx: 6,
+  // Faces meeting at more than this angle form an edge you can snap to; smaller
+  // creases are just the tessellation of a curved surface.
+  featureEdgeAngleDeg: 25,
+};
+
+// Mouse, trackpad and touch navigation.
+export const NAVIGATION = {
+  rotatePerPixel: 0.008, // radians of model rotation per pixel dragged
+  wheelZoomPerPixel: 0.0015, // zoom factor = exp(-deltaY × this)
+  // A press that moves less than this is a click (select), not a drag.
+  dragThresholdPx: 4,
 };
 
 export const TRACKING = {
@@ -174,9 +227,19 @@ export const GESTURE = {
   twistFullExplodeDeg: 90, // further twist needed for +1 explode
   twistMaxDrift: 0.6,
 
+  // Air tap: a pinch released within tapMaxMs, having moved less than tapMaxMove
+  // palm-lengths, clicks whatever is under it. Two taps within doubleTapMs and
+  // doubleTapPx of each other are a double-click.
+  tapMaxMs: 350,
+  tapMaxMove: 0.35,
+  doubleTapMs: 450,
+  doubleTapPx: 50,
+  // Pinch-dragging a panel scrolls it this many pixels per pixel of hand movement.
+  scrollGain: 1.5,
+
   // Pinch held this long on empty space opens the radial menu.
   menuHoldMs: 600,
-  menuRadiusPx: 110,
+  menuRadiusPx: 140,
   menuSelectMinPx: 45, // pinch must move this far from centre to highlight an item
 
   // Holding a picked part this long shows its info card.
@@ -214,6 +277,9 @@ export const RINGS = {
 
 export const HOLOGRAM = {
   selectedColor: '#ffd23f',
+  // X-ray: dim hologram colour, or this opacity for original materials.
+  xrayColor: '#0b3f48',
+  xrayOpacity: 0.18,
   color: '#2ee6ff',
   baseOpacity: 0.06,
   fresnelPower: 2.2,

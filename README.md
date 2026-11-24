@@ -1,5 +1,7 @@
 # HoloCAD
 
+[![CI](https://github.com/Akashkr28/ARKON/actions/workflows/ci.yml/badge.svg)](https://github.com/Akashkr28/ARKON/actions/workflows/ci.yml)
+
 A browser-based "holographic" CAD viewer. Your webcam is the background, a glowing 3D model floats
 over it, and you control it with hand gestures tracked by MediaPipe. No AR hardware. Upload your
 own STEP or GLB files; STEP assemblies are converted on your machine with OpenCASCADE, keeping part
@@ -8,8 +10,27 @@ names, colours and structure.
 - **Phase 1:** gesture-controlled viewer (`apps/web`).
 - **Phase 2:** CAD library: Express API + PostgreSQL (`apps/api`) and a Python STEP → GLB
   converter (`services/converter`).
-- **Next:** AI assistant that drives the same viewer actions (Phase 3), multi-user review
-  sessions (Phase 4).
+- **Phase 3:** engineering tools: real units, mouse/touch navigation and standard views,
+  multi-selection, undo/redo, assembly tree with hide / isolate / X-ray, measurement with
+  snapping, section planes. All controls on one page: [docs/CONTROLS.md](docs/CONTROLS.md).
+- **Phase 4 (inspect):** exact part specs measured on the CAD geometry (size, volume, mass,
+  centre of mass, holes / outer diameters / fillets, part numbers, materials), a SPECS sheet with
+  a material picker, a hover inspector for every CAD face and edge, deep zoom with a coordinate
+  readout, scale bar and ruler grid, and BOM export (CSV, PDF report).
+- **Phase 5 (design):** a DESIGN workspace with a real CAD kernel in the browser
+  (OpenCASCADE via [replicad](https://replicad.xyz), in a Web Worker): base shapes (box,
+  cylinder, tube, polygon prism), holes (patterns, counterbores), pockets, bosses, fillets,
+  chamfers and shell; named parameters and formula dimensions with undo, autosave and design
+  files; shape parts by hand by dragging or pinching dimension handles; export STEP or save to
+  the library. An ASSEMBLE workspace puts designed parts, samples and uploads together with
+  mates (face to face, on axis) that keep their free directions draggable; undo, autosave and
+  assembly files. Parts get a material (which sets their mass), colour and finish; assemblies
+  export as GLB, as a STEP assembly (named, coloured, placed parts), as a BOM, or into the
+  library.
+- **Next:** hosting and accounts.
+
+The browser CAD kernel (`replicad-opencascadejs`, OpenCASCADE) is LGPL-2.1 and loaded
+unmodified as a separate WebAssembly file, like OCCT in the converter (`cadquery-ocp`).
 
 Gesture ideas were inspired by [Holo-Explorer](https://github.com/htongyai/holo-explorer) by Augma
 Imaginarium. No code or assets are taken from it (it's CC BY-NC 4.0); HoloCAD is its own
@@ -41,6 +62,7 @@ stops it. To use another Postgres instead, write `apps/api/.env` yourself from
 |---|---|
 | `npm run dev` | Web, API and converter together (any one can also run alone; see `package.json`) |
 | `npm test` | Web unit tests, API tests (database tests need `DATABASE_URL_TEST`, which `db:start` sets), converter tests |
+| `npm run test:e2e` | End-to-end tests in a real (headless) Chrome; see Testing |
 | `npm run build` | Static build of the viewer into `apps/web/dist/` |
 | `npm run db:start` / `db:stop` / `db:status` | Project-local Postgres |
 | `npm run db:migrate` | Apply SQL migrations to `DATABASE_URL` |
@@ -60,8 +82,15 @@ window.
 - Limits: 200 MB per file (`MAX_UPLOAD_MB`), 10 minutes per conversion (`CONVERSION_TIMEOUT_MIN`),
   both in `apps/api/.env`.
 
-A sample STEP assembly lives in `services/converter/samples/mini-gearbox.step`; regenerate it
-with `cd services/converter && uv run python -m holocad_converter.sample samples/mini-gearbox.step`.
+Two STEP assemblies come with the converter:
+
+- **Aster C1**, a full-size compact car (118 parts, 4.2 m long: body, chassis, powertrain,
+  interior, four corner assemblies with suspension, brakes and wheels). It's the model that opens
+  on startup. Generate its STEP (about 18 MB, not committed) with
+  `cd services/converter && uv run python -m holocad_converter.car samples/aster-c1.step`, then
+  upload it to try the whole pipeline on a real-sized product.
+- A small gearbox, `services/converter/samples/mini-gearbox.step`, for quick tests; regenerate it
+  with `uv run python -m holocad_converter.sample samples/mini-gearbox.step`.
 
 To ship a model with the app instead (works without the API), copy the `.glb` into
 `apps/web/public/models/` and add it to `MODELS` in `apps/web/src/config.js`. The bundled samples
@@ -69,8 +98,16 @@ and their attribution are listed in `apps/web/public/models/ATTRIBUTION.md`.
 
 ## Gestures
 
+Each hand is also a **cursor** (a ring at your pinch point). A quick pinch is a **tap**: it
+presses whatever button, tab or dropdown is under it, or clicks the model like a mouse. The
+full list is in [docs/CONTROLS.md](docs/CONTROLS.md).
+
 | Gesture | What it does |
 |---|---|
+| 👌 Tap (quick pinch) | Press the button / tab / dropdown under the cursor, or select the part |
+| 🖐 + 👌 Tap with the other palm open | Add a part to the selection |
+| 👌👌 Double tap | Frame that part |
+| 👌↕ Pinch-drag a panel or slider | Scroll it / drag it |
 | ✊ Fist (one hand) | Grab and move the model |
 | ☝ Point and move the fingertip | Rotate the model with your finger |
 | ☝ Point, then flick the finger | Spin the model; it coasts and slows down |
@@ -79,10 +116,55 @@ and their attribution are listed in `apps/web/public/models/ATTRIBUTION.md`.
 | ✊↺ Twist one fist counter-clockwise (in place) | Explode; twist back to reduce |
 | 👌 Pinch a part (while exploded) | Pick it and pull it out; it springs back on release |
 | 👌 Keep holding the part ~1 s | Show its info card (name, vertices, bounding box) |
-| 👌 Pinch and hold on empty space ~0.6 s | Radial menu: move toward an item, release to choose (EXPLODE/ASSEMBLE, RESET, MATERIAL, SPAWN HERE) |
+| 👌 Pinch and hold on empty space ~0.6 s | Radial menu of eight commands: explode, select all, fit, isolate, material, hide, undo, reset |
 | 👏 Clap | Reassemble |
 
-Mouse: double-click to move the model to the cursor; while exploded, click a part to select it.
+## Mouse, trackpad and touch
+
+| Input | What it does |
+|---|---|
+| Left drag / one finger | Rotate (horizontal turns around the vertical axis, vertical tilts) |
+| Right or middle drag, Shift + left drag | Pan |
+| Wheel / trackpad scroll / pinch | Zoom toward the cursor (between the fingers) |
+| Click a part | Select it and show its info card (click empty space to clear) |
+| Shift / Ctrl / Cmd + click | Add a part to the selection, or remove it |
+| Double-click | Frame the part under the cursor (empty space: the whole model) |
+
+The left toolbar has **FIT** and the standard views (FRONT, RIGHT, TOP, ISO, BACK, LEFT, BOTTOM),
+plus the length unit (mm, cm, m, in). Sizes are real: the status line shows the model's overall
+dimensions, the part card each part's bounding box. STEP models are measured in their CAD units;
+uploaded GLBs are assumed to be in metres, as the glTF standard requires.
+
+The camera never moves (hand tracking depends on it); navigation moves, turns and scales the
+model, through the same `viewerActions` as gestures.
+
+**PARTS panel** (right side; tabs switch to LIBRARY and DISPLAY): the model's assembly tree from
+the CAD file (e.g. Head › Helmet, Left arm › Gauntlet), with search. Click a row to select the
+part or the whole sub-assembly (Shift/Ctrl/Cmd adds), the ● eye to hide or show it, double-click
+to isolate it. The part card at the top-left shows the selection's name, where it sits in the
+assembly, its real size, and HIDE / ISOLATE / X-RAY buttons.
+
+**Measuring** (↔ DIST / ∠ ANGLE beside the view toolbar, or Q): click points on the model; the
+cursor snaps to corners (◆), then to edges (▬), else to any point on a surface. Edges are real
+feature edges (faces meeting at more than 25°), not the triangles of the mesh. Distances show
+in the chosen unit with ΔX / ΔY / ΔZ; angles use three clicks with the corner in the middle.
+Values are fixed when taken; a measurement taken on an exploded model is marked EXPLODED, since
+distances between moved-apart parts aren't real assembly distances. Measurements clear when you
+open another model. **FIT SEL** / "." frames the selection; FIT frames only what's visible when
+parts are hidden.
+
+**Section planes** (SECTION row in the bottom-left tools, or S): cut the model along its own X
+(left–right), Y (top–bottom) or Z (front–back) axis to see inside. The slider moves the cut and
+shows its position in real units; FLIP keeps the other side; ▭ shows or hides the plane outline.
+The cut turns, moves and explodes with the model. Cut-away geometry can't be clicked, picked or
+snapped to. With original materials, inner walls are shown so cut solids don't look hollow;
+cut faces are not filled in (no "capping") yet.
+
+**Undo** covers how the model is arranged: position, rotation, zoom, views, explode, hidden and
+X-rayed parts, and the section plane. A whole
+drag, wheel zoom or hand gesture is one step, however long it takes. Selection and display
+toggles (mirror, labels, materials…) aren't undoable, as in most CAD tools. The UNDO / REDO
+buttons on the toolbar say what they'll undo; history resets when you open another model.
 
 A gesture has to be held for 4 tracked frames (~0.13 s) before it counts. The yellow word in the
 status bar is the current gesture state; press **D** to see skeletons, poses and timings.
@@ -99,7 +181,17 @@ status bar is the current gesture state; press **D** to see skeletons, poses and
 | F | Mirror video |
 | B | Black & white video |
 | C | Next camera |
-| Esc | Deselect part |
+| Esc | Back out: cancel a half-finished measurement, then the measure tool, then the selection |
+| Ctrl/Cmd + A | Select all parts |
+| H / I / U | Hide the selection / isolate it (hide everything else) / show all |
+| X | X-ray the selection (see-through) |
+| Q | Measure: off → distance → angle → off |
+| S | Section: off → X → Y → Z → off |
+| . | Frame the selection (or everything visible) |
+| Ctrl/Cmd + Z | Undo (moves, turns, zooms, views, explode/assemble) |
+| Ctrl/Cmd + Shift + Z, Ctrl + Y | Redo |
+| 0 | Fit to screen |
+| 1 / 3 / 7 / 5 | Front / right / top / iso view (Blender numpad layout) |
 
 ## Quality
 
@@ -144,6 +236,8 @@ it beyond your machine.
 | `POST /api/models` | multipart: `file` (.step/.stp/.glb), optional `name`, `quality` (draft/standard/fine). 201 with the model; STEP starts `queued` |
 | `GET /api/models` | `{ models: [...] }`, newest first |
 | `GET /api/models/:id` | model + `parts` (name, parent, triangle count, colour) + latest conversion `job` |
+| `GET /api/models/:id/specs` | exact engineering data per part, measured on the CAD geometry (STEP uploads; `null` for GLB): part number, description, material, overall size, volume, area, mass, centre of mass, face types, holes / outer diameters / fillets. 409 until ready |
+| `GET /api/models/:id/faces` | every CAD face (type, area, radius, normal, its triangles in the GLB) and edge (type, length, radius, polyline) per part, for the hover inspector. STEP uploads only; 404 for GLB |
 | `GET /api/models/:id/file` | the GLB (`model/gltf-binary`); 409 until the model is ready |
 | `POST /api/models/:id/retry` | re-convert a STEP model, optionally `{ "quality": "fine" }`; 202 |
 | `DELETE /api/models/:id` | removes the record and its files; 204 |
@@ -182,6 +276,7 @@ apps/api/
 services/converter/holocad_converter/
   convert.py                STEP → GLB (read, mesh by model size, write, report parts)
   app.py                    FastAPI: /health, /convert (paths confined to STORAGE_DIR)
+  car.py                    generates the Aster C1 car (the startup model)
   sample.py                 generates the sample gearbox assembly
 scripts/local-db.mjs        project-local Postgres
 ```
@@ -211,7 +306,36 @@ bloom halos intact. Original-materials mode switches to normal alpha compositing
 | `createdb` / `psql` ask for a password | Not needed: use `npm run db:start` instead |
 | Gestures fire by accident | Raise `GESTURE.debounceFrames` or the relevant threshold |
 
+## Testing
+
+- `npm test`: unit and integration tests. Web (vitest: actions, undo, units, views,
+  measurement, sections, assembly tree), API (vitest + supertest against the test database),
+  converter (pytest against real OpenCASCADE conversions).
+- `npm run test:e2e`: Playwright drives the real app in Chrome: default model and its tree,
+  selection + isolate + undo, search, views, a real two-click measurement on snapped corners,
+  section planes, and a full STEP upload → conversion → open → delete. It starts its own web
+  (:5273), API (:3201) and converter (:8201) on the **test** database and a temporary storage
+  folder, so a running `npm run dev` and your library are never touched. Needs
+  `npm run db:start` (for `DATABASE_URL_TEST`) and, once, `npx playwright install chromium`.
+  `npm run test:e2e -- --ui` lets you watch it.
+
+The test browser has a fake camera and `?tracking=off`, so the webcam itself isn't covered
+end-to-end; the gesture engine is driven with synthetic hands instead, in unit tests and in
+the browser (taps pressing real buttons, dropdowns and parts).
+
+## Code quality and CI
+
+- `npm run lint`: ESLint (JS/JSX, with the React hooks rules) and Ruff (Python).
+- `npm run format` / `npm run format:check`: Prettier for JS, CSS and JSON; Ruff for Python.
+- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every push and pull
+  request: lint and formatting, web unit tests and production build, API tests against a
+  Postgres service, converter tests against real OpenCASCADE, then the Playwright end-to-end
+  suite. A failed end-to-end run uploads its report and traces.
+- `git config blame.ignoreRevsFile .git-blame-ignore-revs` hides the one-off reformatting
+  commit from `git blame`.
+
 ## Not yet built
 
-Hand occlusion (hands passing in front of the model), AI assistant (Phase 3), multi-user review
-(Phase 4), authentication. Each has a `TODO(...)` hook; see `apps/web/src/integrations/README.md`.
+Hand occlusion (hands passing in front of the model), section caps (filled cut faces), saving
+views/measurements, Docker and hosting with accounts (Phase 6), review / training /
+configurator modules, AI assistant and WebXR. Each has a `TODO(...)` hook; see `apps/web/src/integrations/README.md`.

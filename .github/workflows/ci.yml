@@ -1,0 +1,131 @@
+# Runs on every push and pull request: lint, then each test suite in parallel.
+# A pull request can only be merged when all of these are green (set that up under
+# Settings → Branches → branch protection).
+name: CI
+
+on:
+  push:
+    branches: [main, 'phase-*']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  # Postgres service container, used by the API tests and the end-to-end tests.
+  DATABASE_URL_TEST: postgres://holocad:holocad@localhost:5432/holocad_test
+
+jobs:
+  lint:
+    name: Lint and format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx eslint .
+      - run: npx prettier --check .
+      - uses: astral-sh/setup-uv@v6
+      - name: Ruff
+        working-directory: services/converter
+        run: |
+          uvx ruff@0.17.6 check .
+          uvx ruff@0.17.6 format --check .
+
+  web:
+    name: Web unit tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm test -w @holocad/web
+      - run: npm run build
+
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: holocad
+          POSTGRES_PASSWORD: holocad
+          POSTGRES_DB: holocad_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U holocad" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm test -w @holocad/api
+
+  converter:
+    name: Converter tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/converter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: services/converter/uv.lock
+      - run: uv sync --locked
+      - run: uv run pytest -q
+
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [web, api, converter]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: holocad
+          POSTGRES_PASSWORD: holocad
+          POSTGRES_DB: holocad_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U holocad" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: services/converter/uv.lock
+      - run: npm ci
+      - run: cd services/converter && uv sync --locked
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - name: Keep the report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

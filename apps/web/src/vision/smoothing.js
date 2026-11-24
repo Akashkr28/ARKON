@@ -32,8 +32,7 @@ export class OneEuroFilter {
     const dt = Math.max(timeSeconds - this.lastTime, 1e-3);
     const rawDerivative = (value - this.lastValue) / dt;
     const derivative =
-      this.lastDerivative +
-      smoothingFactor(this.derivativeCutoff, dt) * (rawDerivative - this.lastDerivative);
+      this.lastDerivative + smoothingFactor(this.derivativeCutoff, dt) * (rawDerivative - this.lastDerivative);
 
     const cutoff = this.minCutoff + this.beta * Math.abs(derivative);
     const smoothed = this.lastValue + smoothingFactor(cutoff, dt) * (value - this.lastValue);

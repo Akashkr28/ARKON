@@ -47,9 +47,7 @@ export default function DropOverlay() {
   if (!dragging) return null;
   return (
     <div className="drop-overlay">
-      <div className="drop-overlay-box">
-        {online ? 'DROP STEP OR GLB TO UPLOAD' : 'API OFFLINE · UPLOAD WILL FAIL'}
-      </div>
+      <div className="drop-overlay-box">{online ? 'DROP STEP OR GLB TO UPLOAD' : 'API OFFLINE · UPLOAD WILL FAIL'}</div>
     </div>
   );
 }

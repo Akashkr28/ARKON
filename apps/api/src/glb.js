@@ -47,7 +47,11 @@ function materialHex(gltf, materialIndex) {
   if (!factor) return null;
   return `#${factor
     .slice(0, 3)
-    .map((c) => Math.round(linearToSrgb(c) * 255).toString(16).padStart(2, '0'))
+    .map((c) =>
+      Math.round(linearToSrgb(c) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
     .join('')}`;
 }
 

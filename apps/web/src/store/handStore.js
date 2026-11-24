@@ -18,5 +18,7 @@ export const useHandStore = create(() => ({
   activeHandIds: [], // hands driving the current gesture
   poses: {}, // hand id -> debounced pose (FIST, OPEN, POINT, PINCH, NONE)
   menu: null, // radial menu while open: { x, y, radius, items, highlighted }
+  cursors: [], // one per hand, at its pinch point: { id, x, y, pose, pinching, active, hold }
+  picker: null, // a dropdown's options as big buttons, opened by an air tap: { x, y, label, options }
   flickSpeed: null, // fingertip speed (palm-lengths/s) while SPINNING, for tuning
 }));

@@ -43,10 +43,7 @@ describe('unknown routes and bad input', () => {
   });
 
   it('returns 400 for malformed JSON bodies', async () => {
-    const res = await request(app())
-      .post('/api/health')
-      .set('content-type', 'application/json')
-      .send('{not json');
+    const res = await request(app()).post('/api/health').set('content-type', 'application/json').send('{not json');
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/not valid JSON/);
   });

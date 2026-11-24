@@ -14,7 +14,9 @@ LEVELS = {
 
 def configure_occt_output(level: str | None = None) -> None:
     """Show OCCT messages at `level` and above (default: OCCT_LOG env var, else "fail")."""
-    gravity = LEVELS.get((level or os.environ.get("OCCT_LOG", "fail")).lower(), Message_Gravity.Message_Fail)
+    gravity = LEVELS.get(
+        (level or os.environ.get("OCCT_LOG", "fail")).lower(), Message_Gravity.Message_Fail
+    )
     printers = Message.DefaultMessenger_s().Printers()
     for i in range(1, printers.Length() + 1):
         printers.Value(i).SetTraceLevel(gravity)

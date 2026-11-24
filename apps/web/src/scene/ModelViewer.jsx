@@ -1,17 +1,26 @@
 import { Fragment, useEffect, useMemo, useRef } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { Matrix4, Vector3 } from 'three';
+import { DoubleSide, Matrix4, Plane, Vector3 } from 'three';
 import { useViewerStore } from '../store/viewerStore';
 import { modelLoaded } from '../actions/viewerActions';
 import { HOLOGRAM, VIEW } from '../config';
 import { prepareModel } from './prepareModel';
+import { tagSpecIndices } from '../models/partSpecs';
 import { createHologramMaterial } from './hologramMaterial';
 import { createPicker, registerPicker } from './picking';
+import { registerSceneQueries } from './sceneQueries';
+import { createSceneQueries } from './snapping';
+import { sectionPlane } from './sectionPlane';
+import SectionPlaneGizmo from './SectionPlaneGizmo';
+import InspectHighlight from './InspectHighlight';
+import RulerGrid from './RulerGrid';
 import { useModelFile } from './useModelFile';
 
 // Scratch objects reused every frame.
 const targetPosition = new Vector3();
+const localPlane = new Plane();
+const worldPlane = new Plane();
 const targetPull = new Vector3();
 const localDelta = new Vector3();
 const localOrigin = new Vector3();
@@ -39,10 +48,13 @@ function positionPart(part, explodeFactor) {
 function PartLabels({ parts }) {
   const labels = useViewerStore((s) => s.labels);
   const exploded = useViewerStore((s) => s.explodeTarget > 0.05);
+  const hiddenPartIds = useViewerStore((s) => s.hiddenPartIds);
   if (!labels || !exploded) return null;
 
+  const hidden = new Set(hiddenPartIds);
+  const visible = parts.filter((part) => !hidden.has(part.id));
   // Portal each label into its mesh so it rides along with the explode offset.
-  return parts.slice(0, VIEW.maxLabels).map((part) => (
+  return visible.slice(0, VIEW.maxLabels).map((part) => (
     <Fragment key={part.id}>
       {createPortal(
         <Html center className="part-label" zIndexRange={[10, 0]}>
@@ -56,41 +68,114 @@ function PartLabels({ parts }) {
 
 export default function ModelViewer({ url }) {
   const gltf = useModelFile(url);
+  if (gltf) tagSpecIndices(gltf); // idempotent; links parts to the converter's specs
   return gltf ? <LoadedModel scene={gltf.scene} /> : null;
 }
 
-function LoadedModel({ scene }) {
-  const { root, parts } = useMemo(() => prepareModel(scene), [scene]);
+// overlay(content): extra scene content drawn in the model's own frame (design handles).
+export function LoadedModel({ scene, frame = null, overlay = null }) {
+  const { root, parts, metresPerSceneUnit, modelSize, modelBounds } = useMemo(
+    () => prepareModel(scene, { frame }),
+    [scene, frame],
+  );
   const partsById = useMemo(() => new Map(parts.map((p) => [p.id, p])), [parts]);
   const hologramMaterial = useMemo(() => createHologramMaterial(), []);
   const selectedMaterial = useMemo(() => createHologramMaterial(HOLOGRAM.selectedColor), []);
+  // Additive blending: a darker colour simply glows less, which reads as "see-through".
+  const xrayHologramMaterial = useMemo(() => createHologramMaterial(HOLOGRAM.xrayColor), []);
+  const xrayOriginals = useRef(new Map()); // part id -> translucent clone of its own material
   const materialMode = useViewerStore((s) => s.materialMode);
-  const selectedPartId = useViewerStore((s) => s.selectedPartId);
+  const selectedPartIds = useViewerStore((s) => s.selectedPartIds);
+  const hiddenPartIds = useViewerStore((s) => s.hiddenPartIds);
+  const xrayPartIds = useViewerStore((s) => s.xrayPartIds);
+  const sectionActive = useViewerStore((s) => s.section.axis !== null);
   const camera = useThree((s) => s.camera);
+  // One clipping-plane list shared by every model material; holds the section plane
+  // (updated each frame) or nothing. Overlays (rings, labels, measurements) aren't cut.
+  const clipPlanes = useMemo(() => [], []);
+  const size = useThree((s) => s.size);
 
   const groupRef = useRef();
   const explodeRef = useRef(0);
   const pulledParts = useRef(new Set()); // parts with a non-zero pull to animate
 
   useEffect(() => {
-    modelLoaded(parts.map((p) => p.info));
-  }, [parts]);
+    modelLoaded(
+      parts.map((p) => p.info),
+      { metresPerSceneUnit, modelSize, modelBounds },
+    );
+  }, [parts, metresPerSceneUnit, modelSize, modelBounds]);
 
   useEffect(() => registerPicker(createPicker(root, camera)), [root, camera]);
 
   useEffect(() => {
+    const meshById = new Map(parts.map((p) => [p.id, p.mesh]));
+    const content = root.children[0];
+    return registerSceneQueries(createSceneQueries({ root, content, group: groupRef.current, camera, size, meshById }));
+  }, [root, parts, camera, size]);
+
+  useEffect(() => {
+    const selected = new Set(selectedPartIds);
+    const hidden = new Set(hiddenPartIds);
+    const xray = new Set(xrayPartIds);
     for (const part of parts) {
-      const base = materialMode === 'hologram' ? hologramMaterial : part.originalMaterial;
-      part.mesh.material = part.id === selectedPartId ? selectedMaterial : base;
+      // Hidden meshes are skipped by the renderer and by picking.
+      part.mesh.visible = !hidden.has(part.id);
+      const material = selected.has(part.id)
+        ? selectedMaterial
+        : xray.has(part.id)
+          ? xrayMaterialFor(part)
+          : materialMode === 'hologram'
+            ? hologramMaterial
+            : part.originalMaterial;
+      material.clippingPlanes = clipPlanes;
+      showInsideWhenCut(material);
+      part.mesh.material = material;
     }
-  }, [parts, materialMode, selectedPartId, hologramMaterial, selectedMaterial]);
+
+    // A cut-open solid shows its inside walls; solid materials normally skip back faces.
+    function showInsideWhenCut(material) {
+      if (material.isShaderMaterial) return; // hologram materials are already two-sided
+      material.userData.sideBeforeSection ??= material.side;
+      const side = sectionActive ? DoubleSide : material.userData.sideBeforeSection;
+      if (material.side !== side) {
+        material.side = side;
+        material.needsUpdate = true;
+      }
+    }
+
+    function xrayMaterialFor(part) {
+      if (materialMode === 'hologram') return xrayHologramMaterial;
+      let clone = xrayOriginals.current.get(part.id);
+      if (!clone) {
+        clone = part.originalMaterial.clone();
+        Object.assign(clone, { transparent: true, opacity: HOLOGRAM.xrayOpacity, depthWrite: false });
+        xrayOriginals.current.set(part.id, clone);
+      }
+      return clone;
+    }
+  }, [
+    parts,
+    materialMode,
+    selectedPartIds,
+    hiddenPartIds,
+    xrayPartIds,
+    sectionActive,
+    clipPlanes,
+    hologramMaterial,
+    selectedMaterial,
+    xrayHologramMaterial,
+  ]);
 
   useEffect(
     () => () => {
       hologramMaterial.dispose();
       selectedMaterial.dispose();
+      xrayHologramMaterial.dispose();
+      for (const clone of xrayOriginals.current.values()) clone.dispose();
+      xrayOriginals.current.clear();
     },
-    [hologramMaterial, selectedMaterial],
+    [hologramMaterial, selectedMaterial, xrayHologramMaterial],
   );
 
   useFrame((state, dt) => {
@@ -127,15 +212,32 @@ function LoadedModel({ scene }) {
 
     if (explodeChanged) for (const part of parts) positionPart(part, explode);
 
+    // Section: the plane is defined in the model's own space; carry it into world space
+    // so the cut turns, moves and zooms with the model.
+    const plane = sectionPlane(viewer.section, viewer.modelBounds);
+    if (plane) {
+      localPlane.normal.fromArray(plane.normal);
+      localPlane.constant = plane.constant;
+      worldPlane.copy(localPlane).applyMatrix4(root.children[0].matrixWorld);
+      if (clipPlanes[0] !== worldPlane) clipPlanes.splice(0, clipPlanes.length, worldPlane);
+    } else if (clipPlanes.length) {
+      clipPlanes.length = 0;
+    }
+
     const time = state.clock.elapsedTime;
     hologramMaterial.uniforms.uTime.value = time;
     selectedMaterial.uniforms.uTime.value = time;
+    xrayHologramMaterial.uniforms.uTime.value = time;
   });
 
   return (
     <group ref={groupRef}>
       <primitive object={root} />
       <PartLabels parts={parts} />
+      <SectionPlaneGizmo content={root.children[0]} bounds={modelBounds} />
+      <InspectHighlight partsById={partsById} clipPlanes={clipPlanes} />
+      <RulerGrid content={root.children[0]} bounds={modelBounds} />
+      {overlay?.(root.children[0])}
     </group>
   );
 }

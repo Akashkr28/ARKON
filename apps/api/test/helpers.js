@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createPool } from '../src/db/pool.js';
 import { migrate } from '../src/db/migrate.js';
-import { createStorage } from '../src/storage.js';
+import { createStorage, facesPath } from '../src/storage.js';
 import { ConverterError } from '../src/converterClient.js';
 
 export const testDatabaseUrl = process.env.DATABASE_URL_TEST;
@@ -24,7 +24,12 @@ export async function tempStorage() {
 
 // A minimal but valid GLB: one root node with two mesh children. No binary chunk;
 // the inspection code only reads the JSON.
-export function makeGlb({ parts = [{ name: 'Part A', triangles: 12 }, { name: 'Part B', triangles: 4 }] } = {}) {
+export function makeGlb({
+  parts = [
+    { name: 'Part A', triangles: 12 },
+    { name: 'Part B', triangles: 4 },
+  ],
+} = {}) {
   const gltf = {
     asset: { version: '2.0' },
     scene: 0,
@@ -33,7 +38,9 @@ export function makeGlb({ parts = [{ name: 'Part A', triangles: 12 }, { name: 'P
       { name: 'Assembly', children: parts.map((_, i) => i + 1) },
       ...parts.map((part, i) => ({ name: part.name, mesh: i })),
     ],
-    meshes: parts.map((_, i) => ({ primitives: [{ attributes: { POSITION: i }, indices: parts.length + i, material: 0 }] })),
+    meshes: parts.map((_, i) => ({
+      primitives: [{ attributes: { POSITION: i }, indices: parts.length + i, material: 0 }],
+    })),
     accessors: [
       ...parts.map((part) => ({ count: part.triangles * 3, type: 'VEC3', componentType: 5126 })),
       ...parts.map((part) => ({ count: part.triangles * 3, type: 'SCALAR', componentType: 5125 })),
@@ -51,7 +58,14 @@ export function makeGlb({ parts = [{ name: 'Part A', triangles: 12 }, { name: 'P
   return Buffer.concat([header, json]);
 }
 
-export const STEP_TEXT = 'ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((\'test\'),\'2;1\');\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n';
+export const STEP_TEXT =
+  "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('test'),'2;1');\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n";
+
+export const FAKE_FACES = {
+  units: { length: 'mm' },
+  products: [{ faces: [{ type: 'plane', area: 11200, normal: [0, 1, 0], tri: [0, 0, 2] }], edges: [] }],
+  parts: [0],
+};
 
 // Stands in for the Python service: writes a GLB where asked, or fails on demand.
 export function fakeConverter(storage) {
@@ -72,12 +86,22 @@ export function fakeConverter(storage) {
       }
       const glb = makeGlb({ parts: [{ name: 'Base plate', triangles: 12 }] });
       await writeFile(storage.absolute(request.outputPath), glb);
+      await writeFile(storage.absolute(facesPath(request.outputPath)), JSON.stringify(FAKE_FACES));
       return {
         glbBytes: glb.length,
         partCount: 1,
         triangleCount: 12,
         bounds: { min: [0, 0, 0], max: [0.1, 0.05, 0.08], units: 'm' },
-        parts: [{ index: 0, name: 'Base plate', parentName: 'Mini gearbox', triangleCount: 12, color: '#8c9199' }],
+        parts: [
+          {
+            index: 0,
+            name: 'Base plate',
+            parentName: 'Mini gearbox',
+            triangleCount: 12,
+            color: '#8c9199',
+            spec: { partNumber: 'BP-1001', overallSizeMm: [140, 80, 8], volumeMm3: 89600 },
+          },
+        ],
       };
     },
   };

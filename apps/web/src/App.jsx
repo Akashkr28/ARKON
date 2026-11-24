@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useViewerStore } from './store/viewerStore';
 import { useWebcam } from './video/useWebcam';
 import { bindKeyboard } from './input/keyboard';
-import { bindMouse } from './input/mouse';
+import { bindPointer } from './input/pointer';
 import { refreshLibrary } from './actions/libraryActions';
+import { startHistory } from './actions/history';
 import Scene from './scene/Scene';
 import Hud from './hud/Hud';
 import ErrorScreen from './hud/ErrorScreen';
@@ -11,6 +12,8 @@ import DebugOverlay from './hud/DebugOverlay';
 import { useHandTracking } from './vision/useHandTracking';
 import { useHandStore } from './store/handStore';
 import './App.css';
+
+const TRACKING_OFF = new URLSearchParams(window.location.search).get('tracking') === 'off';
 
 export default function App() {
   const videoRef = useRef(null);
@@ -23,11 +26,13 @@ export default function App() {
 
   const camera = useWebcam(videoRef, requestedCameraId);
   // Keep tracking alive while switching cameras; the loop idles until frames arrive.
-  useHandTracking(videoRef, camera.status !== 'error');
+  // ?tracking=off skips hand tracking (no model download), e.g. for mouse-only use or tests.
+  useHandTracking(videoRef, camera.status !== 'error' && !TRACKING_OFF);
   const trackerError = useHandStore((s) => s.error);
 
   useEffect(() => bindKeyboard(), []);
-  useEffect(() => bindMouse(), []);
+  useEffect(() => bindPointer(), []);
+  useEffect(() => startHistory(), []);
   useEffect(() => {
     refreshLibrary();
   }, []);
@@ -50,9 +55,7 @@ export default function App() {
       <Hud />
 
       <div className="hud-errors">
-        {camera.status === 'error' && (
-          <ErrorScreen title={camera.error.title} detail={camera.error.detail} />
-        )}
+        {camera.status === 'error' && <ErrorScreen title={camera.error.title} detail={camera.error.detail} />}
         {modelStatus === 'error' && (
           <ErrorScreen
             title="Model failed to load"

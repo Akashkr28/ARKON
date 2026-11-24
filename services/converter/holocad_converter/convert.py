@@ -25,8 +25,10 @@ from OCP.TDF import TDF_Label
 from OCP.XCAFDoc import XCAFDoc_ShapeTool
 
 from .cad_document import DOCUMENT_UNIT_IN_METRES, new_document, shape_tool
+from .faces import part_faces
 from .glb import list_parts
 from .occt_messages import configure_occt_output
+from .specs import attach_specs, part_specs
 
 configure_occt_output()
 
@@ -82,12 +84,16 @@ def looks_like_step(path: Path) -> bool:
 
 def _read_step(path: Path):
     if not looks_like_step(path):
-        raise ConversionError("This doesn't look like a STEP file (it should start with ISO-10303-21).")
+        raise ConversionError(
+            "This doesn't look like a STEP file (it should start with ISO-10303-21)."
+        )
     doc = new_document()
     reader = STEPCAFControl_Reader()
     reader.SetNameMode(True)
     reader.SetColorMode(True)
     reader.SetLayerMode(False)
+    reader.SetProductMetaMode(True)  # part numbers and descriptions
+    reader.SetMatMode(True)  # materials and densities
     if reader.ReadFile(str(path)) != IFSelect_ReturnStatus.IFSelect_RetDone:
         raise ConversionError("The STEP file couldn't be read; it may be damaged or incomplete.")
     if not reader.Transfer(doc, Message_ProgressRange()):
@@ -167,6 +173,7 @@ def _tessellate(shapes, box: Bnd_Box, quality: Tessellation):
     deflection = max(diagonal * quality.linear_fraction, 1e-3)
     for shape in shapes:
         BRepMesh_IncrementalMesh(shape, deflection, False, quality.angular, True)
+    return deflection
 
 
 def _write_glb(doc, path: Path):
@@ -190,7 +197,25 @@ def _write_glb(doc, path: Path):
         raise RuntimeError("OCCT failed to write the GLB")
 
 
-def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "standard") -> ConversionResult:
+def faces_path_for(glb_path: Path) -> Path:
+    """Where the face/edge data for a GLB lives: beside it (x.glb → x.faces.json)."""
+    return Path(glb_path).with_suffix(".faces.json")
+
+
+def _write_json_atomically(path: Path, data) -> None:
+    import json
+
+    partial = path.with_name(path.name + ".partial")
+    try:
+        partial.write_text(json.dumps(data, separators=(",", ":")))
+        os.replace(partial, path)
+    finally:
+        partial.unlink(missing_ok=True)
+
+
+def convert_step_to_glb(
+    input_path: Path, output_path: Path, quality: str = "standard"
+) -> ConversionResult:
     started = time.perf_counter()
     input_path, output_path = Path(input_path), Path(output_path)
     if quality not in QUALITY:
@@ -200,7 +225,7 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
     _tidy_instance_names(doc)
     shapes = _top_level_shapes(doc)
     box = _bounding_box(shapes)
-    _tessellate(shapes, box, QUALITY[quality])
+    deflection = _tessellate(shapes, box, QUALITY[quality])
 
     # Write to a temp name and rename, so a reader never sees a half-written GLB.
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -213,6 +238,9 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
         os.replace(partial, output_path)
     finally:
         partial.unlink(missing_ok=True)
+    attach_specs(parts, part_specs(doc))
+    faces_path = faces_path_for(output_path)
+    _write_json_atomically(faces_path, part_faces(doc, parts, deflection))
 
     return ConversionResult(
         output_path=output_path,
@@ -223,3 +251,61 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
         parts=parts,
         seconds=time.perf_counter() - started,
     )
+
+
+SPEC_UNITS = {
+    "length": "mm",
+    "area": "mm2",
+    "volume": "mm3",
+    "mass": "kg",
+    "density": "kg/m3",
+    "position": "m (viewer axes)",
+}
+
+
+def _camel(value):
+    if isinstance(value, list):
+        return [_camel(v) for v in value]
+    if isinstance(value, dict):
+        return {
+            re.sub(r"_([a-z0-9])", lambda m: m.group(1).upper(), k): _camel(v)
+            for k, v in value.items()
+        }
+    return value
+
+
+def specs_document(result: ConversionResult) -> dict:
+    """The same JSON the API serves at /api/models/:id/specs (camelCase)."""
+    return {
+        "units": SPEC_UNITS,
+        "parts": [
+            {"index": p["index"], "name": p["name"], "spec": _camel(p.get("spec"))}
+            for p in result.parts
+        ],
+    }
+
+
+def main(argv=None):
+    """Convert a STEP file and write its part specs beside it, for models bundled with the app:
+
+    uv run python -m holocad_converter.convert in.step out.glb [draft|standard|fine]
+    → out.glb and out.specs.json
+    """
+    import json
+    import sys
+
+    args = sys.argv[1:] if argv is None else argv
+    if len(args) not in (2, 3):
+        raise SystemExit(main.__doc__)
+    result = convert_step_to_glb(
+        Path(args[0]), Path(args[1]), args[2] if len(args) == 3 else "standard"
+    )
+    specs_path = Path(args[1]).with_suffix(".specs.json")
+    specs_path.write_text(json.dumps(specs_document(result), separators=(",", ":")))
+    print(
+        f"{result.part_count} parts, {result.glb_bytes // 1024} KB GLB, specs → {specs_path} ({result.seconds:.1f}s)"
+    )
+
+
+if __name__ == "__main__":
+    main()

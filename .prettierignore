@@ -1,0 +1,11 @@
+node_modules
+dist
+.vite
+storage
+.pgdata
+test-results
+playwright-report
+package-lock.json
+services
+apps/web/public/models
+*.md

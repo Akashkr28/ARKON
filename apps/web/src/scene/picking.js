@@ -6,6 +6,14 @@ import { VIEW } from '../config';
 
 let activePicker = null;
 
+// Raycasts ignore clipping, so a section plane's cut-away side would still be
+// clickable. A hit counts only if it's visible and on the kept side of every plane.
+export function isPickable(hit) {
+  if (!hit.object.visible || !hit.object.userData.partId) return false;
+  const planes = hit.object.material?.clippingPlanes;
+  return !planes?.some((plane) => plane.distanceToPoint(hit.point) < 0);
+}
+
 export function registerPicker(picker) {
   activePicker = picker;
   return () => {
@@ -36,7 +44,7 @@ export function createPicker(root, camera) {
       raycaster.setFromCamera(pointer, camera);
       hits.length = 0;
       raycaster.intersectObject(root, true, hits);
-      const hit = hits.find((h) => h.object.visible && h.object.userData.partId);
+      const hit = hits.find(isPickable);
       if (hit) return hit.object.userData.partId;
     }
     return null;
