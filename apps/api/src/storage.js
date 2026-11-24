@@ -52,6 +52,7 @@ export function createStorage(root) {
     remove,
     uploadPath: (id, extension) => `uploads/${id}.${extension}`,
     glbPath: (id) => `models/${id}.glb`,
+    facesPath,
   };
 }
 
@@ -63,4 +64,9 @@ export async function readHead(path, length = 64) {
   } finally {
     await file.close();
   }
+}
+
+// The converter writes face/edge data beside each GLB it makes (x.glb → x.faces.json).
+export function facesPath(glbPath) {
+  return glbPath ? glbPath.replace(/\.glb$/i, '.faces.json') : null;
 }

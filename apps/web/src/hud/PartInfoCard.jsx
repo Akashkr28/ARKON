@@ -1,7 +1,10 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useViewerStore } from '../store/viewerStore';
 import { clearSelection, hideParts, hidePartInfo, isolateParts, toggleXray } from '../actions/viewerActions';
-import { formatSize } from '../units';
+import { formatMass, formatSize } from '../units';
+import { setHudTab } from '../store/uiStore';
+import { useSpecStore } from '../store/specStore';
+import { effectiveMaterial, massKg, productKey } from '../models/partSpecs';
 
 function SelectionSummary({ parts, unit }) {
   const vertices = parts.reduce((sum, part) => sum + part.vertexCount, 0);
@@ -31,9 +34,14 @@ export default function PartInfoCard() {
       unit: s.lengthUnit,
     })),
   );
+  const specs = useSpecStore((s) => s.specs);
+  const picks = useSpecStore((s) => s.materialPicks);
   const selected = selectedPartIds.map((id) => parts[id]).filter(Boolean);
   if (!infoPartId || selected.length === 0) return null;
   const part = selected.at(-1);
+  const spec = specs[part.specIndex] ?? null;
+  const material = effectiveMaterial(spec, picks[productKey(spec, part.name)]);
+  const mass = massKg(spec?.volumeMm3, material?.density);
 
   return (
     <div className="hud-panel part-info">
@@ -56,6 +64,20 @@ export default function PartInfoCard() {
             <dd>{part.vertexCount.toLocaleString()}</dd>
             <dt>SIZE</dt>
             <dd>{formatSize(part.size, unit)}</dd>
+            {spec?.partNumber && (
+              <>
+                <dt>PART NO.</dt>
+                <dd>{spec.partNumber}</dd>
+              </>
+            )}
+            {mass !== null && (
+              <>
+                <dt>MASS</dt>
+                <dd>
+                  {formatMass(mass, unit)} · {material.name}
+                </dd>
+              </>
+            )}
           </dl>
         </>
       )}
@@ -68,6 +90,9 @@ export default function PartInfoCard() {
         </button>
         <button type="button" onClick={() => toggleXray()} title="See-through (X)">
           X-RAY <kbd>X</kbd>
+        </button>
+        <button type="button" onClick={() => setHudTab('specs')} title="Full specification (P)">
+          SPECS <kbd>P</kbd>
         </button>
       </div>
       <div className="part-info-hint">

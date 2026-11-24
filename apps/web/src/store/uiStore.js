@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 // Purely presentational HUD state (which tab is open). Remembered per browser.
 const TAB_KEY = 'holocad.hudTab';
-const TABS = ['parts', 'library', 'display'];
+const TABS = ['parts', 'specs', 'library', 'display'];
 
 function storedTab() {
   try {
@@ -13,7 +13,19 @@ function storedTab() {
   }
 }
 
-export const useUiStore = create(() => ({ hudTab: typeof window === 'undefined' ? 'parts' : storedTab() }));
+export const useUiStore = create(() => ({
+  hudTab: typeof window === 'undefined' ? 'parts' : storedTab(),
+  grid: false, // ruler grid (G)
+  workspace: 'view', // 'view' (open models) | 'design' (make a part) | 'assemble' (put parts together)
+}));
+
+export function setWorkspace(workspace) {
+  useUiStore.setState({ workspace });
+}
+
+export function toggleGrid() {
+  useUiStore.setState({ grid: !useUiStore.getState().grid });
+}
 
 export function setHudTab(tab) {
   if (!TABS.includes(tab)) return;
@@ -23,4 +35,8 @@ export function setHudTab(tab) {
   } catch {
     // Not remembered; fine.
   }
+}
+
+export function toggleSpecsTab() {
+  setHudTab(useUiStore.getState().hudTab === 'specs' ? 'parts' : 'specs');
 }

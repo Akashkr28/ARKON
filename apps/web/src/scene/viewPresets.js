@@ -38,6 +38,13 @@ export function rotateXYZ([x, y, z], [ax, ay, az]) {
   return [x1, y3, z3];
 }
 
+// The inverse of rotateXYZ: undo X, then Y, then Z.
+export function unrotateXYZ(vector, [ax, ay, az]) {
+  const rx = rotateXYZ(vector, [-ax, 0, 0]);
+  const ry = rotateXYZ(rx, [0, -ay, 0]);
+  return rotateXYZ(ry, [0, 0, -az]);
+}
+
 // Scale that keeps the whole model on screen. Exploding pushes parts up to
 // (1 + factor) model radii from the centre.
 export function fitScale(explodeFactor) {

@@ -1,4 +1,5 @@
 import { Box3, Group, Sphere, Vector3 } from 'three';
+import { specIndexOf } from '../models/partSpecs';
 import { VIEW } from '../config';
 
 const FALLBACK_DIRECTION = new Vector3(0, 1, 0);
@@ -48,14 +49,18 @@ function computeExplodeOffset(mesh, worldCenter, radius) {
 }
 
 // Clones a loaded glTF scene, centres it, normalises its size, and gathers
-// per-part data for exploding and picking.
-export function prepareModel(gltfScene) {
+// per-part data for exploding and picking. `frame` ({ center, radius }, metres) fixes the
+// centring and size instead of fitting this scene: a part being designed keeps its place
+// and scale while its dimensions change.
+export function prepareModel(gltfScene, { frame = null } = {}) {
   const content = gltfScene.clone(true);
   const root = new Group();
   root.add(content);
 
   const bounds = new Box3().setFromObject(content);
-  const sphere = bounds.getBoundingSphere(new Sphere());
+  const sphere = frame
+    ? new Sphere(new Vector3().fromArray(frame.center), frame.radius)
+    : bounds.getBoundingSphere(new Sphere());
   const unitScale = VIEW.modelRadius / (sphere.radius || 1);
   content.position.sub(sphere.center);
   root.scale.setScalar(unitScale);
@@ -87,6 +92,7 @@ export function prepareModel(gltfScene) {
         name,
         path: assemblyPath(mesh, content, name),
         vertexCount: mesh.geometry.attributes.position?.count ?? 0,
+        specIndex: specIndexOf(mesh), // into the model's measured specs, if it has any
         size: size.toArray().map((v) => Number(v.toFixed(3))),
       },
     };

@@ -53,6 +53,7 @@ export function createConversionWorker({
       if (!saved) {
         // Deleted while converting: drop the orphaned GLB and close the job.
         await storage.remove(outputPath);
+        await storage.remove(storage.facesPath(outputPath));
         await finishJob(db, job.id, 'failed', 'Model was deleted during conversion');
       }
       if (converterDown) log.info?.('Converter is reachable again; conversions resumed');

@@ -11,8 +11,24 @@ names, colours and structure.
 - **Phase 3:** engineering tools: real units, mouse/touch navigation and standard views,
   multi-selection, undo/redo, assembly tree with hide / isolate / X-ray, measurement with
   snapping, section planes. All controls on one page: [docs/CONTROLS.md](docs/CONTROLS.md).
-- **Next:** AI assistant that drives the same viewer actions (Phase 3), multi-user review
-  sessions (Phase 4).
+- **Phase 4 (inspect):** exact part specs measured on the CAD geometry (size, volume, mass,
+  centre of mass, holes / outer diameters / fillets, part numbers, materials), a SPECS sheet with
+  a material picker, a hover inspector for every CAD face and edge, deep zoom with a coordinate
+  readout, scale bar and ruler grid, and BOM export (CSV, PDF report).
+- **Phase 5 (design):** a DESIGN workspace with a real CAD kernel in the browser
+  (OpenCASCADE via [replicad](https://replicad.xyz), in a Web Worker): base shapes (box,
+  cylinder, tube, polygon prism), holes (patterns, counterbores), pockets, bosses, fillets,
+  chamfers and shell; named parameters and formula dimensions with undo, autosave and design
+  files; shape parts by hand by dragging or pinching dimension handles; export STEP or save to
+  the library. An ASSEMBLE workspace puts designed parts, samples and uploads together with
+  mates (face to face, on axis) that keep their free directions draggable; undo, autosave and
+  assembly files. Parts get a material (which sets their mass), colour and finish; assemblies
+  export as GLB, as a STEP assembly (named, coloured, placed parts), as a BOM, or into the
+  library.
+- **Next:** hosting and accounts.
+
+The browser CAD kernel (`replicad-opencascadejs`, OpenCASCADE) is LGPL-2.1 and loaded
+unmodified as a separate WebAssembly file, like OCCT in the converter (`cadquery-ocp`).
 
 Gesture ideas were inspired by [Holo-Explorer](https://github.com/htongyai/holo-explorer) by Augma
 Imaginarium. No code or assets are taken from it (it's CC BY-NC 4.0); HoloCAD is its own
@@ -211,6 +227,7 @@ it beyond your machine.
 | `GET /api/models` | `{ models: [...] }`, newest first |
 | `GET /api/models/:id` | model + `parts` (name, parent, triangle count, colour) + latest conversion `job` |
 | `GET /api/models/:id/specs` | exact engineering data per part, measured on the CAD geometry (STEP uploads; `null` for GLB): part number, description, material, overall size, volume, area, mass, centre of mass, face types, holes / outer diameters / fillets. 409 until ready |
+| `GET /api/models/:id/faces` | every CAD face (type, area, radius, normal, its triangles in the GLB) and edge (type, length, radius, polyline) per part, for the hover inspector. STEP uploads only; 404 for GLB |
 | `GET /api/models/:id/file` | the GLB (`model/gltf-binary`); 409 until the model is ready |
 | `POST /api/models/:id/retry` | re-convert a STEP model, optionally `{ "quality": "fine" }`; 202 |
 | `DELETE /api/models/:id` | removes the record and its files; 204 |

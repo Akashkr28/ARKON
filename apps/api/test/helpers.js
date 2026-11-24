@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createPool } from '../src/db/pool.js';
 import { migrate } from '../src/db/migrate.js';
-import { createStorage } from '../src/storage.js';
+import { createStorage, facesPath } from '../src/storage.js';
 import { ConverterError } from '../src/converterClient.js';
 
 export const testDatabaseUrl = process.env.DATABASE_URL_TEST;
@@ -53,6 +53,12 @@ export function makeGlb({ parts = [{ name: 'Part A', triangles: 12 }, { name: 'P
 
 export const STEP_TEXT = 'ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((\'test\'),\'2;1\');\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n';
 
+export const FAKE_FACES = {
+  units: { length: 'mm' },
+  products: [{ faces: [{ type: 'plane', area: 11200, normal: [0, 1, 0], tri: [0, 0, 2] }], edges: [] }],
+  parts: [0],
+};
+
 // Stands in for the Python service: writes a GLB where asked, or fails on demand.
 export function fakeConverter(storage) {
   const fake = {
@@ -72,6 +78,7 @@ export function fakeConverter(storage) {
       }
       const glb = makeGlb({ parts: [{ name: 'Base plate', triangles: 12 }] });
       await writeFile(storage.absolute(request.outputPath), glb);
+      await writeFile(storage.absolute(facesPath(request.outputPath)), JSON.stringify(FAKE_FACES));
       return {
         glbBytes: glb.length,
         partCount: 1,

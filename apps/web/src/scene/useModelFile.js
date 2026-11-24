@@ -14,7 +14,7 @@ function readableLoadError(url, error) {
   return `${url}: ${message}`;
 }
 
-function loadOnce(url) {
+export function loadOnce(url) {
   if (!cache.has(url)) {
     const promise = loader.loadAsync(url);
     promise.catch(() => cache.delete(url)); // let a retry try again

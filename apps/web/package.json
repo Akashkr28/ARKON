@@ -14,9 +14,13 @@
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "@react-three/postprocessing": "^3.2.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
     "postprocessing": "^6.39.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "replicad": "^1.1.0",
+    "replicad-opencascadejs": "^1.1.0",
     "three": "^0.187.0",
     "zustand": "^5.1.0"
   },

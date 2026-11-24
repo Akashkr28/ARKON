@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useViewerStore } from '../src/store/viewerStore.js';
+import { initialTransform, useViewerStore } from '../src/store/viewerStore.js';
+import { VIEW } from '../src/config.js';
 import * as actions from '../src/actions/viewerActions.js';
-import { fitScale, nearestAngle } from '../src/scene/viewPresets.js';
+import { fitScale, nearestAngle, rotateXYZ } from '../src/scene/viewPresets.js';
 import { formatLength, formatSize } from '../src/units.js';
 
 const state = () => useViewerStore.getState();
@@ -63,11 +64,47 @@ describe('zoomAbout', () => {
   });
 
   it('respects the zoom limits and moves only by the factor actually applied', () => {
-    actions.scaleTo(19);
+    const limit = actions.maxScale();
+    actions.scaleTo(limit * 0.95);
     actions.zoomAbout(0, 0, 10);
-    expect(state().scale).toBe(20);
+    expect(state().scale).toBe(limit);
     actions.zoomAbout(1, 0, 1e-6);
     expect(state().scale).toBe(0.1);
+  });
+});
+
+describe('close-up viewing', () => {
+  // world = position + scale · R · point
+  const worldOf = (point) => {
+    const { position, rotation, scale } = state();
+    return rotateXYZ(point, rotation).map((v, i) => position[i] + scale * v);
+  };
+
+  it('lets big models zoom in until a couple of millimetres fill the screen', () => {
+    useViewerStore.setState({ metresPerSceneUnit: 2.3 }); // a 4.6 m model
+    const viewHeight = 2 * VIEW.cameraZ * Math.tan((VIEW.cameraFov * Math.PI) / 360);
+    expect(actions.maxScale()).toBeCloseTo((viewHeight * 2.3) / VIEW.closestViewMetres);
+    useViewerStore.setState({ metresPerSceneUnit: 1e-4 }); // a tiny part: never below the old limit
+    expect(actions.maxScale()).toBe(VIEW.maxScale);
+  });
+
+  it('zooms toward a surface point without moving it, in depth too', () => {
+    actions.resetModel();
+    useViewerStore.setState({ metresPerSceneUnit: 2.3 });
+    const point = [0.3, -0.2, 0.9]; // near the front of the model
+    const before = worldOf(point);
+    actions.zoomAt(point, 50);
+    expect(state().scale).toBeCloseTo(50);
+    worldOf(point).forEach((v, i) => expect(v).toBeCloseTo(before[i]));
+  });
+
+  it('orbits around the grabbed point', () => {
+    actions.resetModel();
+    const pivot = [0.5, 0.2, -0.4];
+    const before = worldOf(pivot);
+    actions.rotateBy(0.3, -0.7, pivot);
+    worldOf(pivot).forEach((v, i) => expect(v).toBeCloseTo(before[i]));
+    expect(state().rotation[1]).not.toBe(initialTransform().rotation[1]);
   });
 });
 

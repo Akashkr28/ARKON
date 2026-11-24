@@ -44,6 +44,12 @@ def _triangle_count(gltf: dict, mesh: dict) -> int:
     return total
 
 
+def _primitive_triangles(gltf: dict, mesh: dict) -> list[int]:
+    return [
+        gltf["accessors"][p.get("indices", p["attributes"]["POSITION"])]["count"] // 3 for p in mesh["primitives"]
+    ]
+
+
 def list_parts(path: Path) -> list[dict]:
     """Every node with a mesh, depth-first in scene order (how three.js traverses it)."""
     gltf = read_gltf_json(path)
@@ -63,6 +69,8 @@ def list_parts(path: Path) -> list[dict]:
                     "parent_name": parent_name,
                     "triangle_count": _triangle_count(gltf, mesh),
                     "color": _material_hex(gltf, mesh["primitives"][0].get("material")),
+                    # Per primitive, for mapping triangles back to CAD faces (faces.py).
+                    "primitive_triangles": _primitive_triangles(gltf, mesh),
                 }
             )
         for child in node.get("children", []):

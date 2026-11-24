@@ -10,7 +10,8 @@ fine to ship. Every part has a material, so the spec sheet shows real masses for
 simplified geometry (solid frame rails and seats make it heavier than a real car).
 
 `AsterC1.specs.json` holds each part's measured specs, in the same format as the API's
-`/api/models/:id/specs`; the command below rebuilds it with the GLB.
+`/api/models/:id/specs`; `AsterC1.faces.json` holds
+its CAD faces and edges for the hover inspector. The command below rebuilds all three.
 
 The STEP source is generated rather than committed (about 18 MB). To rebuild both:
 

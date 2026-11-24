@@ -17,6 +17,18 @@ export function snapAt(screenX, screenY) {
   return active ? active.snapAt(screenX, screenY) : null;
 }
 
+// → { partId, world, model (group space, for zoomAt / rotateBy pivots), metres (model
+//   space, real units), depth } for the visible
+//   surface under this pixel, or null.
+export function pointAt(screenX, screenY) {
+  return active?.pointAt ? active.pointAt(screenX, screenY) : null;
+}
+
+// The CAD face or edge under this pixel, for the inspector (see snapping.js).
+export function inspectAt(screenX, screenY, productFor) {
+  return active?.inspectAt ? active.inspectAt(screenX, screenY, productFor) : null;
+}
+
 // → { center: [x,y,z], radius } in the model group's own (unrotated, unscaled)
 //   space, or null if none of the parts are visible.
 export function partsBounds(partIds) {

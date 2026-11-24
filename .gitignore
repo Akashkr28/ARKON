@@ -20,3 +20,6 @@ playwright-report/
 
 # Generated sample (python -m holocad_converter.car)
 services/converter/samples/aster-c1.step
+
+# Test caches
+.vitest/

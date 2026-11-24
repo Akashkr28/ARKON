@@ -139,6 +139,25 @@ export function modelsRouter({ db, storage, worker, maxUploadBytes }) {
     });
   });
 
+  // Face and edge data for the viewer's inspector (STEP uploads only; GLBs have no CAD faces).
+  router.get('/models/:id/faces', async (req, res) => {
+    const model = await loadModelOr404(req.params.id);
+    if (model.status !== 'ready') {
+      throw new HttpError(409, `Model is ${model.status}, not ready yet`);
+    }
+    const path = model.source_format === 'step' ? storage.facesPath(model.glb_path) : null;
+    if (!path) throw new HttpError(404, 'No face data: GLB uploads carry no CAD faces');
+    await new Promise((resolve, reject) => {
+      res.sendFile(storage.absolute(path), { headers: { 'Content-Type': 'application/json' } }, (error) => {
+        if (!error) return resolve();
+        if (error.code === 'ENOENT') {
+          return reject(new HttpError(404, 'No face data for this model yet; convert it again to add it'));
+        }
+        return reject(error);
+      });
+    });
+  });
+
   router.get('/models/:id/file', async (req, res) => {
     const model = await loadModelOr404(req.params.id);
     if (model.status !== 'ready') {
@@ -184,6 +203,7 @@ export function modelsRouter({ db, storage, worker, maxUploadBytes }) {
     if (removed) {
       await storage.remove(removed.source_path);
       if (removed.glb_path !== removed.source_path) await storage.remove(removed.glb_path);
+      await storage.remove(storage.facesPath(removed.glb_path));
     }
     res.status(204).end();
   });

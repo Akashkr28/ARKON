@@ -1,5 +1,11 @@
 import { useViewerStore } from '../store/viewerStore';
-import { fitToSelection, fitToView, redo, setLengthUnit, setView, undo } from '../actions/viewerActions';
+import { fitToSelection, fitToView, redo as redoView, setLengthUnit, setView, undo as undoView } from '../actions/viewerActions';
+import { redoDesign, undoDesign } from '../actions/designActions';
+import { redoAssembly, undoAssembly } from '../actions/assemblyActions';
+import { useAssemblyStore } from '../store/assemblyStore';
+import { useDesignStore } from '../store/designStore';
+import { useUiStore } from '../store/uiStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useHistoryStore } from '../actions/history';
 import { VIEW_PRESETS } from '../scene/viewPresets';
 import { LENGTH_UNITS } from '../units';
@@ -18,7 +24,17 @@ const VIEWS = [
 const MOD = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
 
 function UndoRedo() {
-  const { undoLabel, redoLabel } = useHistoryStore();
+  const viewHistory = useHistoryStore();
+  const workspace = useUiStore((s) => s.workspace);
+  const designHistory = useDesignStore(useShallow((s) => ({ undoLabel: s.undoLabel, redoLabel: s.redoLabel })));
+  const assemblyHistory = useAssemblyStore(useShallow((s) => ({ undoLabel: s.undoLabel, redoLabel: s.redoLabel })));
+  // In DESIGN and ASSEMBLE, undo steps through their edits; view changes have their own.
+  const [{ undoLabel, redoLabel }, undo, redo] =
+    workspace === 'design'
+      ? [designHistory, undoDesign, redoDesign]
+      : workspace === 'assemble'
+        ? [assemblyHistory, undoAssembly, redoAssembly]
+        : [viewHistory, undoView, redoView];
   return (
     <div className="view-undo">
       <button

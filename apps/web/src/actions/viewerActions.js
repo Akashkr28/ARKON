@@ -53,10 +53,33 @@ export function moveBy(dx, dy, dz = 0) {
   moveTo(x + dx, y + dy, z + dz);
 }
 
-export function rotateBy(dx, dy) {
-  const [x, y, z] = get().rotation;
-  set({ rotation: [x + dx, y + dy, z] });
+// Where a point of the model (group space, see pointAt) is, or will be once the view
+// settles: world = position + scale · R · point.
+function worldOf(point, { position, rotation, scale } = get()) {
+  const turned = rotateXYZ(point, rotation);
+  return position.map((p, i) => p + scale * turned[i]);
+}
+
+// pivot: a point of the model (group space, e.g. the surface under the mouse) that stays
+// put on screen, as in CAD tools; without one the model turns about its own centre.
+export function rotateBy(dx, dy, pivot = null) {
+  const { rotation, scale } = get();
+  const next = [rotation[0] + dx, rotation[1] + dy, rotation[2]];
+  if (!pivot) {
+    set({ rotation: next });
+  } else {
+    const fixed = worldOf(pivot);
+    const turned = rotateXYZ(pivot, next);
+    set({ rotation: next, position: fixed.map((v, i) => v - scale * turned[i]) });
+  }
   emit('rotateBy', { dx, dy });
+}
+
+// The deepest zoom for the open model: closestViewMetres fills the screen height.
+const VIEW_HEIGHT = 2 * VIEW.cameraZ * Math.tan((VIEW.cameraFov * Math.PI) / 360);
+export function maxScale() {
+  const metresPerUnit = get().metresPerSceneUnit || 1;
+  return Math.max(VIEW.maxScale, (VIEW_HEIGHT * metresPerUnit) / VIEW.closestViewMetres);
 }
 
 export function spin(velocityX, velocityY) {
@@ -69,7 +92,7 @@ export function stopSpin() {
 }
 
 export function scaleTo(scale) {
-  const clamped = clamp(scale, VIEW.minScale, VIEW.maxScale);
+  const clamped = clamp(scale, VIEW.minScale, maxScale());
   set({ scale: clamped });
   emit('scaleTo', { scale: clamped });
 }
@@ -82,11 +105,22 @@ export function scaleBy(factor) {
 // on screen, like zooming toward the mouse cursor in CAD tools.
 export function zoomAbout(x, y, factor) {
   const { scale, position } = get();
-  const next = clamp(scale * factor, VIEW.minScale, VIEW.maxScale);
+  const next = clamp(scale * factor, VIEW.minScale, maxScale());
   const applied = next / scale;
   const [px, py, pz] = position;
   set({ scale: next, position: [x + (px - x) * applied, y + (py - y) * applied, pz] });
   emit('zoomAbout', { x, y, factor });
+}
+
+// Zoom toward a point of the model (group space), e.g. the surface under the mouse: it
+// stays exactly where it is on screen and in depth, so it can't run into the camera.
+export function zoomAt(point, factor) {
+  const { scale, position } = get();
+  const fixed = worldOf(point);
+  const next = clamp(scale * factor, VIEW.minScale, maxScale());
+  const applied = next / scale;
+  set({ scale: next, position: position.map((p, i) => fixed[i] + (p - fixed[i]) * applied) });
+  emit('zoomAt', { point, factor });
 }
 
 // Turn the model to a standard view: front, back, left, right, top, bottom or iso.
@@ -121,7 +155,7 @@ export function fitToParts(partIds, label = 'Fit to selection') {
   if (!bounds || bounds.radius <= 0) return false;
   const { rotation } = get();
   // A radius of 1 scene unit at scale 1 is "the whole model fits" (see prepareModel).
-  const scale = clamp(VIEW.modelRadius / bounds.radius, VIEW.minScale, VIEW.maxScale);
+  const scale = clamp(VIEW.modelRadius / bounds.radius, VIEW.minScale, maxScale());
   const offset = rotateXYZ(bounds.center, rotation).map((v) => v * scale);
   // Depth too: a part near the front of a long model (a car's battery, seen from the
   // front) would otherwise land beside or behind the camera once scaled up.
@@ -403,6 +437,11 @@ export function toggleLabels() {
 export function setMaterialMode(mode) {
   set({ materialMode: mode });
   emit('setMaterialMode', { mode });
+}
+
+// Changing how a part looks only shows in the original materials: switch to them.
+export function showOriginalMaterials() {
+  if (get().materialMode !== 'original') setMaterialMode('original');
 }
 
 export function toggleMaterialMode() {

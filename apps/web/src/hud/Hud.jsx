@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useViewerStore } from '../store/viewerStore';
 import { useHandStore } from '../store/handStore';
 import HandCards from './HandCards';
 import RadialMenu from './RadialMenu';
+import HandCursors from './HandCursors';
+import GesturePicker from './GesturePicker';
 import PartInfoCard from './PartInfoCard';
 import GestureLegend from './GestureLegend';
 import LibraryPanel from './LibraryPanel';
@@ -11,6 +14,15 @@ import QualityHint from './QualityHint';
 import ViewToolbar from './ViewToolbar';
 import MeasurePanel from './MeasurePanel';
 import AssemblyTree from './AssemblyTree';
+import SpecSheet, { SpecsLoader } from './SpecSheet';
+import InspectTooltip from './InspectTooltip';
+import ViewScale from './ViewScale';
+import DesignPanel from './DesignPanel';
+import { openDesign } from '../actions/designActions';
+import { openAssembly } from '../actions/assemblyActions';
+import AssemblyPanel from './AssemblyPanel';
+import { useAssemblyStore } from '../store/assemblyStore';
+import { useDesignStore } from '../store/designStore';
 import { setHudTab, useUiStore } from '../store/uiStore';
 import { formatSize } from '../units';
 import * as actions from '../actions/viewerActions';
@@ -118,6 +130,31 @@ function StatusLine() {
   const trackerStatus = useHandStore((s) => s.status);
   const gestureState = useHandStore((s) => s.gestureState);
 
+  const designing = useUiStore((s) => s.workspace === 'design');
+  const assembling = useUiStore((s) => s.workspace === 'assemble');
+  const assemblyName = useAssemblyStore((s) => s.name);
+  const assemblyCounts = useAssemblyStore((s) => `${s.components.length} PARTS · ${s.mates.length} MATES`);
+  const designName = useDesignStore((s) => s.name);
+  const designSize = useDesignStore((s) => s.part?.properties.sizeMm);
+
+  if (assembling) {
+    return (
+      <div className="hud-panel hud-status">
+        ASSEMBLY · {assemblyName.toUpperCase()} · {assemblyCounts} · {TRACKER_TEXT[trackerStatus]}
+      </div>
+    );
+  }
+
+  if (designing) {
+    const size = designSize ? ` · ${formatSize(designSize.map((mm) => mm / 1000), unit).toUpperCase()}` : '';
+    return (
+      <div className="hud-panel hud-status">
+        DESIGN · {designName.toUpperCase()}
+        {size} · {TRACKER_TEXT[trackerStatus]}
+      </div>
+    );
+  }
+
   const modelText =
     modelStatus === 'loading'
       ? 'LOADING MODEL…'
@@ -135,6 +172,7 @@ function StatusLine() {
 
 const TABS = [
   ['parts', 'PARTS'],
+  ['specs', 'SPECS'],
   ['library', 'LIBRARY'],
   ['display', 'DISPLAY'],
 ];
@@ -142,6 +180,30 @@ const TABS = [
 // Tabs keep the right side to one panel at a time instead of a growing stack.
 function RightPanel() {
   const tab = useUiStore((s) => s.hudTab);
+  const workspace = useUiStore((s) => s.workspace);
+  const [designTab, setDesignTab] = useState('design');
+  if (workspace !== 'view') {
+    const main = workspace === 'design' ? ['design', 'DESIGN'] : ['design', 'ASSEMBLE'];
+    return (
+      <>
+        <div className="hud-panel hud-tabs" role="tablist">
+          {[main, ['display', 'DISPLAY']].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={designTab === id}
+              className={`hud-tab${designTab === id ? ' is-active' : ''}`}
+              onClick={() => setDesignTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {designTab !== 'design' ? <ControlPanel /> : workspace === 'design' ? <DesignPanel /> : <AssemblyPanel />}
+      </>
+    );
+  }
   return (
     <>
       <div className="hud-panel hud-tabs" role="tablist">
@@ -157,8 +219,15 @@ function RightPanel() {
             {label}
           </button>
         ))}
+        <button type="button" role="tab" aria-selected={false} className="hud-tab hud-tab-design" onClick={openDesign} title="Make your own part">
+          DESIGN
+        </button>
+        <button type="button" role="tab" aria-selected={false} className="hud-tab hud-tab-design" onClick={openAssembly} title="Put parts together">
+          ASSEMBLE
+        </button>
       </div>
       {tab === 'parts' && <AssemblyTree />}
+      {tab === 'specs' && <SpecSheet />}
       {tab === 'library' && <LibraryPanel />}
       {tab === 'display' && <ControlPanel />}
     </>
@@ -166,20 +235,26 @@ function RightPanel() {
 }
 
 export default function Hud() {
+  const wide = useUiStore((s) => s.hudTab === 'specs' || s.workspace !== 'view');
   return (
     <div className="hud">
+      <SpecsLoader />
+      <InspectTooltip />
       <HandCards />
       <RadialMenu />
       <StatusLine />
       <PartInfoCard />
-      <div className="hud-right">
+      <div className={`hud-right${wide ? ' is-wide' : ''}`}>
         <RightPanel />
       </div>
       <ViewToolbar />
       <MeasurePanel />
+      <ViewScale />
       <GestureLegend />
       <QualityHint />
       <DropOverlay />
+      <GesturePicker />
+      <HandCursors />
     </div>
   );
 }

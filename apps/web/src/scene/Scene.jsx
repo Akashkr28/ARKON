@@ -1,4 +1,6 @@
 import { Component, useMemo } from 'react';
+import CameraRange from './CameraRange';
+import SnapshotCapture from './SnapshotCapture';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useViewerStore } from '../store/viewerStore';
 import { modelFailed, suggestQuality, tick } from '../actions/viewerActions';
@@ -7,6 +9,9 @@ import { VIEW } from '../config';
 import { useLibraryStore } from '../store/libraryStore';
 import { findModelEntry } from '../models/catalog';
 import ModelViewer from './ModelViewer';
+import DesignModel from './DesignModel';
+import AssemblyModel from './AssemblyModel';
+import { useUiStore } from '../store/uiStore';
 import HandRings from './HandRings';
 import Measurements from './Measurements';
 import Effects from './Effects';
@@ -50,6 +55,7 @@ export default function Scene() {
   // Re-resolve when the library changes (e.g. a model was re-converted: new URL).
   const libraryModels = useLibraryStore((s) => s.models);
   const model = findModelEntry(modelId, libraryModels);
+  const workspace = useUiStore((s) => s.workspace);
 
   // Hologram mode renders on black and the canvas is screen-blended over the video:
   // black disappears, glow adds light, and bloom halos aren't clipped by alpha.
@@ -71,12 +77,24 @@ export default function Scene() {
       <directionalLight position={[-4, -2, -3]} intensity={0.6} />
 
       <ViewerClock />
+      <CameraRange />
+      <SnapshotCapture />
       <PerformanceWatch />
       {/* TODO(depth): hand occlusion — depth-only hand/forearm capsules so hands pass in front of the model (see integrations/README.md). */}
-      {model && (
-        <ModelErrorBoundary key={`${modelId}:${modelLoadCount}`}>
-          <ModelViewer url={model.url} />
+      {workspace === 'design' ? (
+        <ModelErrorBoundary key="design">
+          <DesignModel />
         </ModelErrorBoundary>
+      ) : workspace === 'assemble' ? (
+        <ModelErrorBoundary key="assemble">
+          <AssemblyModel />
+        </ModelErrorBoundary>
+      ) : (
+        model && (
+          <ModelErrorBoundary key={`${modelId}:${modelLoadCount}`}>
+            <ModelViewer url={model.url} />
+          </ModelErrorBoundary>
+        )
       )}
       <Measurements />
       <HandRings />

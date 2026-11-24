@@ -1,6 +1,8 @@
 import { Box3, EdgesGeometry, Matrix4, Raycaster, Sphere, Vector2, Vector3 } from 'three';
 import { MEASURE } from '../config';
 import { isPickable } from './picking';
+import { faceAtTriangle, primitiveIndexOf } from '../models/partFaces';
+import { specIndexOf } from '../models/partSpecs';
 
 // Measurement snapping, CAD-style: corners first, then edges, then any point on a
 // surface. "Edges" are feature edges (where faces meet at a real angle), not the
@@ -57,6 +59,21 @@ export function createSceneQueries({ root, content, group, camera, size, meshByI
     hits.length = 0;
     raycaster.intersectObject(root, true, hits);
     return hits.find(isPickable) ?? null;
+  }
+
+  // The visible surface point under a pixel: for zooming toward it, orbiting around it,
+  // and the coordinate readout. Cheap (one raycast, no snapping).
+  function pointAt(screenX, screenY) {
+    const hit = visibleHit(screenX, screenY);
+    if (!hit) return null;
+    return {
+      partId: hit.object.userData.partId,
+      world: hit.point.toArray(),
+      // In the model group's own space: what the view actions pivot and zoom around.
+      model: group.worldToLocal(hit.point.clone()).toArray(),
+      metres: content.worldToLocal(hit.point.clone()).toArray(),
+      depth: camera.position.z - hit.point.z, // along the view direction
+    };
   }
 
   function snapAt(screenX, screenY) {
@@ -116,6 +133,45 @@ export function createSceneQueries({ root, content, group, camera, size, meshByI
     };
   }
 
+  // The CAD face or edge under the cursor, for the inspector. `productFor(specIndex)`
+  // returns that part's face/edge data (models/partFaces.js), or null.
+  // → { partId, specIndex, kind: 'edge' | 'face', index } or null
+  function inspectAt(screenX, screenY, productFor) {
+    const hit = visibleHit(screenX, screenY);
+    if (!hit) return null;
+    const mesh = hit.object;
+    const specIndex = specIndexOf(mesh);
+    const product = specIndex === null ? null : productFor(specIndex);
+    if (!product) return null;
+    cursor.set(screenX, screenY);
+    const slack = hit.distance * 0.02;
+
+    // An edge within a few pixels wins over the face under it. Edges behind the visible
+    // surface (the far side of the part) are skipped.
+    let bestEdge = -1;
+    let bestPixels = MEASURE.inspectEdgePx;
+    product.edges.forEach((edge, index) => {
+      const points = edge.points;
+      for (let i = 0; i + 5 < points.length; i += 3) {
+        a.set(points[i], points[i + 1], points[i + 2]).applyMatrix4(mesh.matrixWorld);
+        b.set(points[i + 3], points[i + 4], points[i + 5]).applyMatrix4(mesh.matrixWorld);
+        toScreen(a, camera, size, screenA);
+        toScreen(b, camera, size, screenB);
+        const t = segmentParameter(screenA, screenB, cursor);
+        const pixels = screenOnEdge.copy(screenA).lerp(screenB, t).distanceTo(cursor);
+        if (pixels >= bestPixels) continue;
+        world.copy(a).lerp(b, t);
+        if (world.distanceTo(camera.position) > hit.distance + slack) continue;
+        bestPixels = pixels;
+        bestEdge = index;
+      }
+    });
+    if (bestEdge >= 0) return { partId: mesh.userData.partId, specIndex, kind: 'edge', index: bestEdge };
+
+    const face = faceAtTriangle(product, primitiveIndexOf(mesh), hit.faceIndex);
+    return face < 0 ? null : { partId: mesh.userData.partId, specIndex, kind: 'face', index: face };
+  }
+
   function partsBounds(partIds) {
     const ids = new Set(partIds);
     // Boxed in the group's own space, so neither the answer nor its tightness depends on
@@ -141,5 +197,5 @@ export function createSceneQueries({ root, content, group, camera, size, meshByI
     return mesh ? out.fromArray(point.local).applyMatrix4(mesh.matrixWorld) : null;
   }
 
-  return { snapAt, partsBounds, worldPointOf };
+  return { pointAt, snapAt, inspectAt, partsBounds, worldPointOf };
 }

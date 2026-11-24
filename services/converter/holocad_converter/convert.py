@@ -26,6 +26,7 @@ from OCP.XCAFDoc import XCAFDoc_ShapeTool
 
 from .cad_document import DOCUMENT_UNIT_IN_METRES, new_document, shape_tool
 from .glb import list_parts
+from .faces import part_faces
 from .specs import attach_specs, part_specs
 from .occt_messages import configure_occt_output
 
@@ -170,6 +171,7 @@ def _tessellate(shapes, box: Bnd_Box, quality: Tessellation):
     deflection = max(diagonal * quality.linear_fraction, 1e-3)
     for shape in shapes:
         BRepMesh_IncrementalMesh(shape, deflection, False, quality.angular, True)
+    return deflection
 
 
 def _write_glb(doc, path: Path):
@@ -193,6 +195,22 @@ def _write_glb(doc, path: Path):
         raise RuntimeError("OCCT failed to write the GLB")
 
 
+def faces_path_for(glb_path: Path) -> Path:
+    """Where the face/edge data for a GLB lives: beside it (x.glb → x.faces.json)."""
+    return Path(glb_path).with_suffix(".faces.json")
+
+
+def _write_json_atomically(path: Path, data) -> None:
+    import json
+
+    partial = path.with_name(path.name + ".partial")
+    try:
+        partial.write_text(json.dumps(data, separators=(",", ":")))
+        os.replace(partial, path)
+    finally:
+        partial.unlink(missing_ok=True)
+
+
 def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "standard") -> ConversionResult:
     started = time.perf_counter()
     input_path, output_path = Path(input_path), Path(output_path)
@@ -203,7 +221,7 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
     _tidy_instance_names(doc)
     shapes = _top_level_shapes(doc)
     box = _bounding_box(shapes)
-    _tessellate(shapes, box, QUALITY[quality])
+    deflection = _tessellate(shapes, box, QUALITY[quality])
 
     # Write to a temp name and rename, so a reader never sees a half-written GLB.
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -217,6 +235,8 @@ def convert_step_to_glb(input_path: Path, output_path: Path, quality: str = "sta
     finally:
         partial.unlink(missing_ok=True)
     attach_specs(parts, part_specs(doc))
+    faces_path = faces_path_for(output_path)
+    _write_json_atomically(faces_path, part_faces(doc, parts, deflection))
 
     return ConversionResult(
         output_path=output_path,

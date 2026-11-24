@@ -163,6 +163,7 @@ export function processResult(result, video, inferenceMs, nowMs) {
     activeHandIds: gesture.activeHandIds,
     poses: gesture.poses,
     menu: gesture.menu,
+    cursors: gesture.cursors,
     flickSpeed: gesture.flickSpeed,
     frame: state.frame + 1,
     trackFps: fpsEstimate,
@@ -185,6 +186,8 @@ export function resetPipeline() {
     activeHandIds: [],
     poses: {},
     menu: null,
+    cursors: [],
+    picker: null,
     flickSpeed: null,
   });
 }

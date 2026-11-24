@@ -6,12 +6,15 @@ import { useViewerStore } from '../store/viewerStore';
 import { modelLoaded } from '../actions/viewerActions';
 import { HOLOGRAM, VIEW } from '../config';
 import { prepareModel } from './prepareModel';
+import { tagSpecIndices } from '../models/partSpecs';
 import { createHologramMaterial } from './hologramMaterial';
 import { createPicker, registerPicker } from './picking';
 import { registerSceneQueries } from './sceneQueries';
 import { createSceneQueries } from './snapping';
 import { sectionPlane } from './sectionPlane';
 import SectionPlaneGizmo from './SectionPlaneGizmo';
+import InspectHighlight from './InspectHighlight';
+import RulerGrid from './RulerGrid';
 import { useModelFile } from './useModelFile';
 
 // Scratch objects reused every frame.
@@ -65,11 +68,16 @@ function PartLabels({ parts }) {
 
 export default function ModelViewer({ url }) {
   const gltf = useModelFile(url);
+  if (gltf) tagSpecIndices(gltf); // idempotent; links parts to the converter's specs
   return gltf ? <LoadedModel scene={gltf.scene} /> : null;
 }
 
-function LoadedModel({ scene }) {
-  const { root, parts, metresPerSceneUnit, modelSize, modelBounds } = useMemo(() => prepareModel(scene), [scene]);
+// overlay(content): extra scene content drawn in the model's own frame (design handles).
+export function LoadedModel({ scene, frame = null, overlay = null }) {
+  const { root, parts, metresPerSceneUnit, modelSize, modelBounds } = useMemo(
+    () => prepareModel(scene, { frame }),
+    [scene, frame],
+  );
   const partsById = useMemo(() => new Map(parts.map((p) => [p.id, p])), [parts]);
   const hologramMaterial = useMemo(() => createHologramMaterial(), []);
   const selectedMaterial = useMemo(() => createHologramMaterial(HOLOGRAM.selectedColor), []);
@@ -215,6 +223,9 @@ function LoadedModel({ scene }) {
       <primitive object={root} />
       <PartLabels parts={parts} />
       <SectionPlaneGizmo content={root.children[0]} bounds={modelBounds} />
+      <InspectHighlight partsById={partsById} clipPlanes={clipPlanes} />
+      <RulerGrid content={root.children[0]} bounds={modelBounds} />
+      {overlay?.(root.children[0])}
     </group>
   );
 }

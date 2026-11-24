@@ -23,7 +23,7 @@ const shared = { STORAGE_DIR: storageDir };
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 60_000,
+  timeout: 120_000, // the first test of a run includes the dev server warming up
   expect: { timeout: 15_000 },
   fullyParallel: false, // one shared database and server
   workers: 1,
